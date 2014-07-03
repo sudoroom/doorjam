@@ -11,6 +11,11 @@ if(!fs.existsSync('failed_attempts')) {
     process.exit(1);
 }
 
+if(process.argv.length < 3) {
+    console.log("Usage: ./"+process.argv[1]+" <name and contact info for new user>")
+    process.exit(1);
+}
+
 var attempts = fs.readFileSync('failed_attempts', {encoding: 'utf8'}).split("\n");
 
 var i, lastAttempt;
