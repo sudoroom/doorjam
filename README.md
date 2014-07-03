@@ -23,6 +23,14 @@ sudo cp doorjam.init /etc/init.d/doorjam
 sudo update-rc.d doorjam defaults
 ```
 
+# Granting access remotely
+
+Change the IP, path and <name and contact info of new user>:
+
+```
+ssh root@192.168.1.178 "cd /root/doorjam; ./grant_access_to_last_attempt.js <name and contact info of new user>"
+```
+
 # License and copyright
 
 GPLv3+
