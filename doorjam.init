@@ -1,0 +1,32 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          doorjam
+# Required-Start:    $remote_fs dbus
+# Required-Stop:     $remote_fs dbus
+# Should-Start:      $syslog
+# Should-Stop:       $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Meatspace firewall 
+# Description:       Controls door access for sudo room / omni
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
+SCRIPTNAME=/etc/init.d/$NAME
+
+
+case "$1" in
+    start)
+        start-stop-daemon --start --pidfile /var/run/doorjam.pid --chdir /root/doorjam --background --exec /usr/local/bin/node  -- /root/doorjam/index.js
+        ;;
+    stop)
+        start-stop-daemon --stop --pidfile /var/run/doorjam.pid
+        ;;
+    *)
+        echo "Usage: $SCRIPTNAME {start|stop}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
+
