@@ -5,3 +5,7 @@ Users swipe their access card in a Magtek USB magnetic swipe card reader and if 
 If the card is not recognized then its hash is logged in the failed_attempts file with the date and time of the attempt.
 
 Swipea new card and run the grant_access_to_last_failed_attempt.js script to grant people access.
+
+Copyright 2014 Marc Juul
+
+License: GPLv3
