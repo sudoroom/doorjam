@@ -1,0 +1,27 @@
+{
+  "name": "doorjam",
+  "version": "0.0.1",
+  "main": "./lib/index.js",
+  "description": "Software for the meatspace firewall at sudo room",
+  "homepage": "http://github.com/sudoroom/doorjam",
+  "author": {
+    "name": "Marc Juul",
+    "email": "juul@sudomesh.org"
+  },
+  "keywords": [
+    "access",
+    "control",
+    "physical",
+    "door"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sudoroom/doorjam.git"
+  },
+  "dependencies": {
+    "sleep": "~1.1.8",
+    "node-hid": "~0.3.1",
+    "serialport": "~1.4.0",
+    "randomstring": "~1.0.3"
+  }
+}
