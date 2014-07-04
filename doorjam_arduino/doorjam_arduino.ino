@@ -61,8 +61,8 @@ void loop() {
       byte throwAway = Serial.read();
     }
   }
-  openButtonState = digitalRead(OPEN_BTN_PIN);
-  closeButtonState = digitalRead(CLOSE_BTN_PIN);
+  openButtonState = digitalRead(UNLOCK_BTN_PIN);
+  closeButtonState = digitalRead(LOCK_BTN_PIN);
   if(openButtonState > 0) {
     doorOpen();
   } else if(closeButtonState > 0) {
