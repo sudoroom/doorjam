@@ -12,7 +12,7 @@ if(!fs.existsSync('failed_attempts')) {
 }
 
 if(process.argv.length < 3) {
-    console.log("Usage: ./"+process.argv[1]+" <name and contact info for new user>")
+    console.log("Usage: "+process.argv[1]+" <name and contact info for new user>")
     process.exit(1);
 }
 

@@ -25,6 +25,9 @@
 #define CLOSE_CURRENTMAX 140 // change this to 70 to be able to trip it by hand
 #define MOTOR_START_TIME 150 // milliseconds before we start looking at current draw
 
+#define LOCK_BTN_PIN 7
+#define UNLOCK_BTN_PIN 4
+
 #define AVG_CYCLES 50.0 // how many times to read analogRead and average reading
 
 void setup() {
@@ -36,7 +39,14 @@ void setup() {
   pinMode(CHB_DIR,OUTPUT);
   pinMode(CHB_PWM,OUTPUT);
   pinMode(CHB_BRK,OUTPUT);
+  pinMode(LOCK_BTN_PIN, INPUT);
+  pinMode(UNLOCK_BTN_PIN, INPUT);
+  digitalWrite(LOCK_BTN_PIN, HIGH); // this is important 
+  digitalWrite(UNLOCK_BTN_PIN, HIGH); // this is important
 }
+
+int openButtonState = 0;
+int closeButtonState = 0;
 
 void loop() {
   if (Serial.available()) {  // if a byte appears on the serial port
@@ -51,6 +61,14 @@ void loop() {
       byte throwAway = Serial.read();
     }
   }
+  openButtonState = digitalRead(OPEN_BTN_PIN);
+  closeButtonState = digitalRead(CLOSE_BTN_PIN);
+  if(openButtonState > 0) {
+    doorOpen();
+  } else if(closeButtonState > 0) {
+    doorClose();
+  }
+  delay(100);
 }
 
 void doorOpen() {

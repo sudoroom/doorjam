@@ -28,8 +28,10 @@ sudo update-rc.d doorjam defaults
 Change the IP, path and <name and contact info of new user>:
 
 ```
-ssh root@192.168.1.178 "cd /root/doorjam; ./grant_access_to_last_attempt.js <name and contact info of new user>"
+ssh root@192.168.1.2 "cd /root/doorjam; ./grant_access_to_last_attempt.js <name and contact info of new user>"
 ```
+
+You can also use the sudo_grant_access.sh script, but you should edit it to suit your environment.
 
 # License and copyright
 
