@@ -42,10 +42,8 @@ void setup() {
   pinMode(CHB_DIR,OUTPUT);
   pinMode(CHB_PWM,OUTPUT);
   pinMode(CHB_BRK,OUTPUT);
-  pinMode(LOCK_BTN_PIN, INPUT);
-  pinMode(UNLOCK_BTN_PIN, INPUT);
-  digitalWrite(LOCK_BTN_PIN, HIGH); // this is important 
-  digitalWrite(UNLOCK_BTN_PIN, HIGH); // this is important
+  digitalWrite(LOCK_BTN_PIN, HIGH); // enable internal pull-up resistor
+  digitalWrite(UNLOCK_BTN_PIN, HIGH); // enable internal pull-up resistor
 }
 
 int openButtonState = 0;
