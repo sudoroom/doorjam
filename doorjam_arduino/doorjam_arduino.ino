@@ -10,6 +10,9 @@
  */
 
 // http://arduino.cc/en/Main/ArduinoMotorShieldR3
+#define SPEAKER 5 // a beeper connected to pin 5 for happy/sad sounds
+#define LED_DATA 2 // adafruit neopixel ws2811 ws2812 style LEDs (six)
+
 #define CHA_DIR 12
 #define CHA_PWM 3
 #define CHA_BRK 9
