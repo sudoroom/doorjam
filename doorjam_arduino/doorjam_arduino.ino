@@ -19,8 +19,8 @@
 #define CHB_BRK 8
 #define CHB_SENSE A1
 
-#define OPEN_TIME 10500
-#define CLOSE_TIME 10500
+#define OPEN_TIME 14000
+#define CLOSE_TIME 14000
 #define OPEN_CURRENTMAX 140
 #define CLOSE_CURRENTMAX 140 // change this to 70 to be able to trip it by hand
 #define MOTOR_START_TIME 150 // milliseconds before we start looking at current draw
@@ -61,14 +61,25 @@ void loop() {
       byte throwAway = Serial.read();
     }
   }
-  openButtonState = digitalRead(UNLOCK_BTN_PIN);
-  closeButtonState = digitalRead(LOCK_BTN_PIN);
-  if(openButtonState > 0) {
+
+  if (!digitalRead(UNLOCK_BTN_PIN)) {
+    openButtonState += 1;
+    Serial.print("U");
+  } else openButtonState = 0;
+
+  if (!digitalRead(LOCK_BTN_PIN)) {
+    closeButtonState += 1;
+    Serial.print("L");
+  } else closeButtonState = 0;
+  
+  if(openButtonState > 25) {
     doorOpen();
-  } else if(closeButtonState > 0) {
+    openButtonState = 0;
+  } else if(closeButtonState > 25) {
     doorClose();
+    closeButtonState = 0;
   }
-  delay(100);
+
 }
 
 void doorOpen() {
