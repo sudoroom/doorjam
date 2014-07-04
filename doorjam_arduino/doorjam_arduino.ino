@@ -19,8 +19,8 @@
 #define CHB_BRK 8
 #define CHB_SENSE A1
 
-#define OPEN_TIME 3000
-#define CLOSE_TIME 3000
+#define OPEN_TIME 10500
+#define CLOSE_TIME 10500
 #define OPEN_CURRENTMAX 140
 #define CLOSE_CURRENTMAX 140 // change this to 70 to be able to trip it by hand
 #define MOTOR_START_TIME 150 // milliseconds before we start looking at current draw
