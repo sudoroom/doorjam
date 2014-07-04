@@ -81,7 +81,8 @@ function findMagStripeReader() {
             return dev;
         }
     }
-
+    console.log("Magstripe reader not found. Exiting.");
+    process.exit(1);
 }
 
 function checkACL(inputline) {
