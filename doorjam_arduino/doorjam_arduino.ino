@@ -10,8 +10,10 @@
  */
 
 // http://arduino.cc/en/Main/ArduinoMotorShieldR3
+
 #define SPEAKER 5 // a beeper connected to pin 5 for happy/sad sounds
 #define LED_DATA 2 // adafruit neopixel ws2811 ws2812 style LEDs (six)
+#define LED_HOWMANY 6 // how many LEDs there are on the strip
 
 #define SADTONE 200 // sad tone frequency
 #define SADTIME 500 // sadtone time in milliseconds
@@ -38,6 +40,9 @@
 
 #define AVG_CYCLES 50.0 // how many times to read analogRead and average reading
 
+#include <Adafruit_NeoPixel.h> // https://github.com/adafruit/Adafruit_NeoPixel
+Adafruit_NeoPixel leds = Adafruit_NeoPixel(LED_HOWMANY, LED_DATA, NEO_GRB + NEO_KHZ800);
+
 void setup() {
   Serial.begin(9600);
   Serial.println("Hello world, this is the door");
@@ -50,6 +55,8 @@ void setup() {
   digitalWrite(LOCK_BTN_PIN, HIGH); // enable internal pull-up resistor
   digitalWrite(UNLOCK_BTN_PIN, HIGH); // enable internal pull-up resistor
   pinMode(SPEAKER,OUTPUT);
+  leds.begin();
+  leds.show(); // Initialize all pixels to 'off'
 }
 
 int openButtonState = 0;
@@ -83,7 +90,7 @@ void loop() {
     doorClose();
     closeButtonState = 0;
   }
-
+  ledsIdle(); // set the LED strip to idle color
 }
 
 void doorOpen() {
@@ -97,6 +104,7 @@ void doorOpen() {
     float current = 0;
     for (int i = 0; i < AVG_CYCLES; i++) current += analogRead(CHB_SENSE); // read a bunch of times
     current = current / AVG_CYCLES; // get the average current reading
+    animateLedsOpen(millis() - now);
     Serial.println(current);
     if ((millis() - now > MOTOR_START_TIME) && (current > OPEN_CURRENTMAX)) {
       overcurrent = true;
@@ -117,6 +125,7 @@ void doorClose() { // yes i know it should be one subroutine to open and close, 
     float current = 0;
     for (int i = 0; i < AVG_CYCLES; i++) current += analogRead(CHB_SENSE); // read a bunch of times
     current = current / AVG_CYCLES; // get the average current reading
+    animateLedsClose(millis() - now);
     Serial.println(current);
     if ((millis() - now > MOTOR_START_TIME) && (current > CLOSE_CURRENTMAX)) {
       overcurrent = true;
@@ -124,12 +133,49 @@ void doorClose() { // yes i know it should be one subroutine to open and close, 
     }
   }
   digitalWrite(CHB_PWM,LOW); // turn motor off
-  }
+}
 
 void happyTone() {
   tone (SPEAKER, HAPPYTONE, HAPPYTIME);
 }
 
 void sadTone() {
-  tone (SPEAKER, SADTONE, SADTIME);
+  tone (SPEAKER, SADTONE, SADTIME); // tone is not blocking
+  for (int f = 0; f < 10; f++) { // ten cycles = off/on/off/on/off/on/off/on/off/on
+    for (uint16_t i = 0; i < leds.numPixels(); i++) {
+      int blinkBit = (f & 1); // multiply colors by this to make them blink
+      leds.setPixelColor(i, leds.Color(255*blinkBit, 0, 0)); // RGB color
+    }
+    leds.show(); // update the LEDs color
+    delay(100); // each on or off of LEDs lasts this long
+  }
+}
+
+void ledsIdle() {
+  for (uint16_t i = 0; i < leds.numPixels(); i++) {
+    leds.setPixelColor(i, leds.Color(128, 0, 0)); // RGB idle color
+  }
+  leds.show(); // update the LEDs color
+}
+
+void animateLedsOpen(unsigned long time) {
+  for (uint16_t i = 0; i < leds.numPixels(); i++) {
+    if ((time % 1000) > (i * 1000 / leds.numPixels())) { // 1000ms total animation time`
+      leds.setPixelColor(i, leds.Color(0, 255, 128)); // RGB color
+    } else {
+      leds.setPixelColor(i, leds.Color(0, 0, 128)); // RGB color
+    }
+  }
+  leds.show(); // update the LEDs color
+}
+
+void animateLedsClose(unsigned long time) {
+  for (uint16_t i = 0; i < leds.numPixels(); i++) {
+    if ((time % 1000) > (i * 1000 / leds.numPixels())) { // 1000ms total animation time`
+      leds.setPixelColor(leds.numPixels() - 1 - i, leds.Color(255, 0, 128)); // RGB color
+    } else {
+      leds.setPixelColor(leds.numPixels() - 1 - i, leds.Color(0, 0, 128)); // RGB color
+    }
+  }
+  leds.show(); // update the LEDs color
 }
