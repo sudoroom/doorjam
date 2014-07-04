@@ -120,7 +120,7 @@ function logAttempt(line) {
 
 function grantAccess() {
     console.log("Access granted on " + new Date());
-    serial.write("O");
+    serial.write("o");
 }
 
 
