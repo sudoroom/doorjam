@@ -13,6 +13,11 @@
 #define SPEAKER 5 // a beeper connected to pin 5 for happy/sad sounds
 #define LED_DATA 2 // adafruit neopixel ws2811 ws2812 style LEDs (six)
 
+#define SADTONE 200 // sad tone frequency
+#define SADTIME 500 // sadtone time in milliseconds
+#define HAPPYTONE 1000  // happy tone frequency
+#define HAPPYTIME 500  // happy tone time in milliseconds
+
 #define CHA_DIR 12
 #define CHA_PWM 3
 #define CHA_BRK 9
@@ -44,6 +49,7 @@ void setup() {
   pinMode(CHB_BRK,OUTPUT);
   digitalWrite(LOCK_BTN_PIN, HIGH); // enable internal pull-up resistor
   digitalWrite(UNLOCK_BTN_PIN, HIGH); // enable internal pull-up resistor
+  pinMode(SPEAKER,OUTPUT);
 }
 
 int openButtonState = 0;
@@ -53,11 +59,14 @@ void loop() {
   if (Serial.available()) {  // if a byte appears on the serial port
     byte inByte = Serial.read();
     if (inByte == 'o') {
+      happyTone();
       doorOpen();
     }
     if (inByte == 'c') {
+      happyTone();
       doorClose();
     }
+    if (inByte == 's') sadTone(); // use this when a card is rejected
     while (Serial.available()) { // read all bytes in the buffer until the the buffer is empty
       byte throwAway = Serial.read();
     }
@@ -120,3 +129,11 @@ void doorClose() { // yes i know it should be one subroutine to open and close, 
   }
   digitalWrite(CHB_PWM,LOW); // turn motor off
   }
+
+void happyTone() {
+  tone (SPEAKER, HAPPYTONE, HAPPYTIME);
+}
+
+void sadTone() {
+  tone (SPEAKER, SADTONE, SADTIME);
+}
