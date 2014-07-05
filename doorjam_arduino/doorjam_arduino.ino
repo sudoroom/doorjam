@@ -27,9 +27,9 @@
 #define CHB_BRK 8
 #define CHB_SENSE A1
 
-#define OPEN_TIME 14000
+#define OPEN_TIME 14000 // milliseconds how long to run the motor
 #define CLOSE_TIME 14000
-#define OPEN_CURRENTMAX 140
+#define OPEN_CURRENTMAX 140 // analogRead() value, not amps or anything
 #define CLOSE_CURRENTMAX 140 // change this to 70 to be able to trip it by hand
 #define MOTOR_START_TIME 150 // milliseconds before we start looking at current draw
 
