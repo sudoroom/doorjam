@@ -58,14 +58,8 @@ int closeButtonState = 0;
 void loop() {
   if (Serial.available()) {  // if a byte appears on the serial port
     byte inByte = Serial.read();
-    if (inByte == 'o') {
-      happyTone();
-      doorOpen();
-    }
-    if (inByte == 'c') {
-      happyTone();
-      doorClose();
-    }
+    if (inByte == 'o') doorOpen();
+    if (inByte == 'c') doorClose();
     if (inByte == 's') sadTone(); // use this when a card is rejected
     while (Serial.available()) { // read all bytes in the buffer until the the buffer is empty
       byte throwAway = Serial.read();
@@ -94,6 +88,7 @@ void loop() {
 
 void doorOpen() {
   Serial.println("opening door!");
+  happyTone(); // tone is not blocking
   digitalWrite(CHB_DIR,LOW);
   digitalWrite(CHB_PWM,HIGH); // turn motor on
   unsigned long now = millis();
@@ -113,6 +108,7 @@ void doorOpen() {
 
 void doorClose() { // yes i know it should be one subroutine to open and close, sorry.
   Serial.println("closing!");
+  happyTone(); // tone is not blocking
   digitalWrite(CHB_DIR,HIGH);
   digitalWrite(CHB_PWM,HIGH); // turn motor on
   unsigned long now = millis();
