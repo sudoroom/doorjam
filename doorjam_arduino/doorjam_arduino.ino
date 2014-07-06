@@ -38,6 +38,55 @@
 
 #define AVG_CYCLES 50.0 // how many times to read analogRead and average reading
 
+
+void happyTone() {
+  tone (SPEAKER, HAPPYTONE, HAPPYTIME);
+}
+
+void sadTone() {
+  tone (SPEAKER, SADTONE, SADTIME);
+}
+
+void doorOpen() {
+  Serial.println("opening door!");
+  happyTone(); // tone is not blocking
+  digitalWrite(CHB_DIR,LOW);
+  digitalWrite(CHB_PWM,HIGH); // turn motor on
+  unsigned long now = millis();
+  boolean overcurrent = false;
+  while (millis() - now < OPEN_TIME && !overcurrent) {
+    float current = 0;
+    for (int i = 0; i < AVG_CYCLES; i++) current += analogRead(CHB_SENSE); // read a bunch of times
+    current = current / AVG_CYCLES; // get the average current reading
+    Serial.println(current);
+    if ((millis() - now > MOTOR_START_TIME) && (current > OPEN_CURRENTMAX)) {
+      overcurrent = true;
+      Serial.println("overcurrent!");
+    }
+  }
+  digitalWrite(CHB_PWM,LOW); // turn motor off
+}
+
+void doorClose() { // yes i know it should be one subroutine to open and close, sorry.
+  Serial.println("closing!");
+  happyTone(); // tone is not blocking
+  digitalWrite(CHB_DIR,HIGH);
+  digitalWrite(CHB_PWM,HIGH); // turn motor on
+  unsigned long now = millis();
+  boolean overcurrent = false;
+  while (millis() - now < CLOSE_TIME && !overcurrent) {
+    float current = 0;
+    for (int i = 0; i < AVG_CYCLES; i++) current += analogRead(CHB_SENSE); // read a bunch of times
+    current = current / AVG_CYCLES; // get the average current reading
+    Serial.println(current);
+    if ((millis() - now > MOTOR_START_TIME) && (current > CLOSE_CURRENTMAX)) {
+      overcurrent = true;
+      Serial.println("overcurrent!");
+    }
+  }
+  digitalWrite(CHB_PWM,LOW); // turn motor off
+  }
+
 void setup() {
   Serial.begin(9600);
   Serial.println("Hello world, this is the door");
@@ -84,52 +133,4 @@ void loop() {
     closeButtonState = 0;
   }
 
-}
-
-void doorOpen() {
-  Serial.println("opening door!");
-  happyTone(); // tone is not blocking
-  digitalWrite(CHB_DIR,LOW);
-  digitalWrite(CHB_PWM,HIGH); // turn motor on
-  unsigned long now = millis();
-  boolean overcurrent = false;
-  while (millis() - now < OPEN_TIME && !overcurrent) {
-    float current = 0;
-    for (int i = 0; i < AVG_CYCLES; i++) current += analogRead(CHB_SENSE); // read a bunch of times
-    current = current / AVG_CYCLES; // get the average current reading
-    Serial.println(current);
-    if ((millis() - now > MOTOR_START_TIME) && (current > OPEN_CURRENTMAX)) {
-      overcurrent = true;
-      Serial.println("overcurrent!");
-    }
-  }
-  digitalWrite(CHB_PWM,LOW); // turn motor off
-}
-
-void doorClose() { // yes i know it should be one subroutine to open and close, sorry.
-  Serial.println("closing!");
-  happyTone(); // tone is not blocking
-  digitalWrite(CHB_DIR,HIGH);
-  digitalWrite(CHB_PWM,HIGH); // turn motor on
-  unsigned long now = millis();
-  boolean overcurrent = false;
-  while (millis() - now < CLOSE_TIME && !overcurrent) {
-    float current = 0;
-    for (int i = 0; i < AVG_CYCLES; i++) current += analogRead(CHB_SENSE); // read a bunch of times
-    current = current / AVG_CYCLES; // get the average current reading
-    Serial.println(current);
-    if ((millis() - now > MOTOR_START_TIME) && (current > CLOSE_CURRENTMAX)) {
-      overcurrent = true;
-      Serial.println("overcurrent!");
-    }
-  }
-  digitalWrite(CHB_PWM,LOW); // turn motor off
-  }
-
-void happyTone() {
-  tone (SPEAKER, HAPPYTONE, HAPPYTIME);
-}
-
-void sadTone() {
-  tone (SPEAKER, SADTONE, SADTIME);
 }
