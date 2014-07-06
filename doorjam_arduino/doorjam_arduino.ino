@@ -11,7 +11,7 @@
 
 // http://arduino.cc/en/Main/ArduinoMotorShieldR3
 
-#include <Adafruit_NeoPixel.h>
+//#include <Adafruit_NeoPixel.h>
 
 #define SPEAKER 5 // a beeper connected to pin 5 for happy/sad sounds
 #define LED_DATA 2 // adafruit neopixel ws2811 ws2812 style LEDs (six)
@@ -56,7 +56,7 @@ void sadTone() {
 
 void doorOpen() {
   Serial.println("opening door!");
-  happyTone(); // tone is not blocking  
+  //happyTone(); // tone is not blocking  
   digitalWrite(CHB_DIR,LOW);
   digitalWrite(CHB_PWM,HIGH); // turn motor on
   unsigned long now = millis();
@@ -76,7 +76,7 @@ void doorOpen() {
 
 void doorClose() { // yes i know it should be one subroutine to open and close, sorry.
   Serial.println("closing!");
-  happyTone(); // tone is not blocking
+  //happyTone(); // tone is not blocking
   digitalWrite(CHB_DIR,HIGH);
   digitalWrite(CHB_PWM,HIGH); // turn motor on
   unsigned long now = millis();
