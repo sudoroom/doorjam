@@ -10,6 +10,9 @@
  */
 
 // http://arduino.cc/en/Main/ArduinoMotorShieldR3
+
+#include <Adafruit_NeoPixel.h>
+
 #define SPEAKER 5 // a beeper connected to pin 5 for happy/sad sounds
 #define LED_DATA 2 // adafruit neopixel ws2811 ws2812 style LEDs (six)
 
@@ -38,6 +41,9 @@
 
 #define AVG_CYCLES 50.0 // how many times to read analogRead and average reading
 
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, LED_DATA, NEO_GRB + NEO_KHZ800);
+
+
 
 void happyTone() {
   tone (SPEAKER, HAPPYTONE, HAPPYTIME);
@@ -47,9 +53,29 @@ void sadTone() {
   tone (SPEAKER, SADTONE, SADTIME);
 }
 
+//Theatre-style crawling lights with rainbow effect
+void theaterChaseRainbow(uint8_t wait) {
+  for (int j=0; j < 256; j++) {     // cycle all 256 colors in the wheel
+    for (int q=0; q < 3; q++) {
+        for (int i=0; i < strip.numPixels(); i=i+3) {
+          strip.setPixelColor(i+q, Wheel( (i+j) % 255));    //turn every third pixel on
+        }
+        strip.show();
+       
+        delay(wait);
+       
+        for (int i=0; i < strip.numPixels(); i=i+3) {
+          strip.setPixelColor(i+q, 0);        //turn every third pixel off
+        }
+    }
+  }
+}
+
+
 void doorOpen() {
   Serial.println("opening door!");
   happyTone(); // tone is not blocking
+  theaterChaseRainbow(50);  
   digitalWrite(CHB_DIR,LOW);
   digitalWrite(CHB_PWM,HIGH); // turn motor on
   unsigned long now = millis();
