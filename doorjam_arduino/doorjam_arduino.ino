@@ -56,7 +56,7 @@ void sadTone() {
 
 void doorOpen() {
   Serial.println("opening door!");
-  //happyTone(); // tone is not blocking  
+  happyTone(); // tone is not blocking  
   digitalWrite(CHB_DIR,LOW);
   digitalWrite(CHB_PWM,HIGH); // turn motor on
   unsigned long now = millis();
