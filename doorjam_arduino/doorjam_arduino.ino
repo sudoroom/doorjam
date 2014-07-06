@@ -35,6 +35,8 @@
 #define OPEN_CURRENTMAX 140 // analogRead() value, not amps or anything
 #define CLOSE_CURRENTMAX 140 // change this to 70 to be able to trip it by hand
 #define MOTOR_START_TIME 150 // milliseconds before we start looking at current draw
+#define OPEN_RETRACT_TIME 500 // milliseconds to reverse motor after hitting current limit
+#define CLOSE_RETRACT_TIME 500 // milliseconds to reverse motor after hitting current limit
 
 #define LOCK_BTN_PIN 7
 #define UNLOCK_BTN_PIN 4
@@ -72,6 +74,13 @@ void doorOpen() {
     }
   }
   digitalWrite(CHB_PWM,LOW); // turn motor off
+  if (overcurrent) {
+    delay(100); // wait for motor to stop turning
+    digitalWrite(CHB_DIR,HIGH); // REVERSE DIRECTION
+    digitalWrite(CHB_PWM,HIGH); // turn motor on
+    delay(OPEN_RETRACT_TIME); // reverse course (to remove physical tension of jam)
+    digitalWrite(CHB_PWM,LOW); // turn motor off
+  }
 }
 
 void doorClose() { // yes i know it should be one subroutine to open and close, sorry.
@@ -92,7 +101,14 @@ void doorClose() { // yes i know it should be one subroutine to open and close, 
     }
   }
   digitalWrite(CHB_PWM,LOW); // turn motor off
+  if (overcurrent) {
+    delay(100); // wait for motor to stop turning
+    digitalWrite(CHB_DIR,LOW); // REVERSE DIRECTION
+    digitalWrite(CHB_PWM,HIGH); // turn motor on
+    delay(CLOSE_RETRACT_TIME); // reverse course (to remove physical tension of jam)
+    digitalWrite(CHB_PWM,LOW); // turn motor off
   }
+}
 
 void setup() {
   Serial.begin(9600);
