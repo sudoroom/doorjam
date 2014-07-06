@@ -41,7 +41,7 @@
 
 #define AVG_CYCLES 50.0 // how many times to read analogRead and average reading
 
-#Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, LED_DATA, NEO_GRB + NEO_KHZ800);
+//Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, LED_DATA, NEO_GRB + NEO_KHZ800);
 
 
 
