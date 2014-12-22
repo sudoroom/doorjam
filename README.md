@@ -18,10 +18,23 @@ Swipe a new card and run the grant_access_to_last_failed_attempt.js script to gr
 
 # Autostart on boot
 
+## With forever (autostart on fail)
+
 ```
-sudo cp doorjam.init /etc/init.d/doorjam
+sudo cp doorjam.initd.with-forever /etc/init.d/doorjam
 sudo update-rc.d doorjam defaults
 ```
+
+Now edit the /etc/init.d/doorjam file to ensure all paths are correct.
+
+## Without forever (no autostart on fail)
+
+```
+sudo cp doorjam.initd.no-forever /etc/init.d/doorjam
+sudo update-rc.d doorjam defaults
+```
+
+Now edit the /etc/init.d/doorjam file to ensure all paths are correct.
 
 # Granting access remotely
 

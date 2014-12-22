@@ -1,0 +1,74 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          doorjam
+# Required-Start:    $remote_fs dbus
+# Required-Stop:     $remote_fs dbus
+# Should-Start:      $syslog
+# Should-Stop:       $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Meatspace firewall 
+# Description:       Controls door access for sudo room / omni
+### END INIT INFO
+
+# Source function library.
+. /lib/lsb/init-functions
+
+pidFile="/var/run/doorjam.pid"
+logFile="/var/log/doorjam.log"
+
+command="node"
+nodeApp="/root/doorjam/index.js"
+foreverApp="/usr/local/bin/forever"
+
+start() {
+  echo "Starting $nodeApp"
+
+  # Notice that we change the PATH because on reboot
+  # the PATH does not include the path to node.
+  # Launching forever with a full path
+  # does not work unless we set the PATH.
+  PATH=/usr/local/bin:$PATH
+  export NODE_ENV=production
+  #PORT=80
+  $foreverApp start --pidFile $pidFile -l $logFile -a -d -c "$command" $nodeApp
+  RETVAL=$?
+}
+
+restart() {
+  echo -n "Restarting $nodeApp"
+  $foreverApp restart $nodeApp
+  RETVAL=$?
+}
+
+stop() {
+  echo -n "Shutting down $nodeApp"
+  $foreverApp stop $nodeApp
+  RETVAL=$?
+}
+
+status() {
+  echo -n "Status $nodeApp"
+  $foreverApp list
+  RETVAL=$?
+}
+
+case "$1" in
+   start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+   status)
+        status
+       ;;
+   restart)
+   	restart
+        ;;
+	*)
+       echo "Usage:  {start|stop|status|restart}"
+       exit 1
+        ;;
+esac
+exit $RETVAL
