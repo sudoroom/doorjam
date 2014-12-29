@@ -1,12 +1,12 @@
 #!/bin/bash
 ### BEGIN INIT INFO
-# Provides:          /root/doorjam/index.js
+# Provides:          doorjam
 # Required-Start:    $remote_fs $syslog
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: forever running /root/doorjam/index.js
-# Description:       /root/doorjam/index.js
+# Short-Description: forever running doorjam
+# Description:       forever running doorjam
 ### END INIT INFO
 #
 # initd a node app
