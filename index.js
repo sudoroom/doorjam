@@ -2,7 +2,7 @@
 
 var fs = require('fs');
 var HID = require('node-hid');
-var child_process = require('child_process');
+var nfc = require('nfc').nfc;
 var crypto = require('crypto');
 var SerialPort = require('serialport').SerialPort;
 var sleep = require('sleep').sleep;
@@ -130,18 +130,22 @@ function init_magstripe() {
 }
 
 
-function init_nfc() {
+function init_nfc(callback, attempt) {
+    attempt = attempt || 0;
 
-    var nfcdev = new NFC();
+    var nfcdev = new nfc.NFC();
     
     var last_nfc_attempt = {
         time: new Date(0),
         code: null
     };
     
-    nfcdev.on('uid', function(uid) {
-        
-        hash.update(uid);
+    nfcdev.on('read', function(tag) {
+        if(!tag.uid) {
+            return
+        }
+
+        hash.update(tag.uid);
         var code = hash.digest('hex');
         
         var a_bit_ago = new Date();
@@ -172,12 +176,25 @@ function init_nfc() {
     });
 
     nfcdev.on('error', function(err) {
-        console.error("NFC device failure: " + err);
-        process.exit(1);
+        console.error("NFC device error: " + err);
     });
 
-    // TODO if no nfc reader is plugged in this errors and segfaults :(
-    nfcdev.start(); 
+
+    // This is a workaround since the first attempt will sometimes fail
+    // see https://github.com/camme/node-nfc/issues/9
+    try {
+        nfcdev.start();
+        return callback(null, nfcdev);
+    } catch(e) {
+        attempt++;
+        if(attempt > 2) {
+            return callback("Could not initialize NFC device");
+        } else {
+            setTimeout(function() {
+                init_nfc(callback, attempt);
+            }, 300);
+        }
+    }
 }
 
 function init_salt() {
@@ -231,6 +248,11 @@ function init_arduino_fake(callback) {
     });
 }
 
+function init_done() {
+    state = 'running';
+    console.log("Everything initialized and ready");
+}
+
 function usage(f) {
     f = f || prcess.stderr;
 
@@ -280,14 +302,19 @@ init_arduino(function(err, ser) {
         init_magstripe();
     }
 
-    if(!argv['disable-rfid']) 
-        console.log("Initializing RFID reader");{
-        init_nfc();
-    }
-    
-    setTimeout(function() {
-        state = 'running';
-        console.log("Everything initialized and ready");
-    }, initPeriod);    
+    if(!argv['disable-rfid']) {
+        console.log("Initializing RFID reader");
+        init_nfc(function(err, device) {
+            if(err) {
+                console.error("Could not initialize NFC device");
+                process.exit(1);
+            }
+            console.log("NFC device initialized");
+
+            setTimeout(init_done, initPeriod);
+        });       
+    } else {
+        setTimeout(init_done, initPeriod);
+    }        
 
 });

@@ -12,7 +12,7 @@ function nfc_scan(callback) {
         if(!m) {
             return callback(null, null);
         }
-        var uid = m[1].replace(/\s+/g, '');
+        var uid = m[1].replace(/^\s+/, '').replace(/\s+$/, '').replace(/\s+/g, ':');
         callback(null, uid);
     });
 }
