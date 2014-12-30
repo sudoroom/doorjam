@@ -2,7 +2,7 @@
 
 var fs = require('fs');
 var HID = require('node-hid');
-var NFC = require('nfc').nfc;
+var child_process = require('child_process');
 var crypto = require('crypto');
 var SerialPort = require('serialport').SerialPort;
 var sleep = require('sleep').sleep;

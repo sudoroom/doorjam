@@ -3,7 +3,7 @@ DoorJam is the meatspace firewall for sudo room
 # Prerequisites
 
 ```
-sudo aptitude install build-essential libusb-1.0-0-dev libnfc5 libnfc-dev 
+sudo aptitude install build-essential libusb-1.0-0-dev libnfc-bin
 
 npm install
 ```
