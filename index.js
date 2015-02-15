@@ -12,7 +12,7 @@ var argv = require('minimist')(process.argv.slice(2));
 
 var magStripeProductName = 'USB Swipe Reader';
 
-var serialDevice = '/dev/ttyACM0';
+var serialDevice = '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_74937303936351111051-if00'; // '/dev/ttyACM0';
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
 
