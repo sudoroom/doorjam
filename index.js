@@ -12,7 +12,7 @@ var argv = require('minimist')(process.argv.slice(2));
 
 var scancodeDecode = require('./lib/scancode_decode.js');
 
-var settings = require('settings.js');
+var settings = require('./settings.js');
 
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
@@ -24,17 +24,22 @@ var arduino = null;
 var nfcdev = null;
 var magdev = null;
 
-function exitCleanup(reason) {
-    console.log("Exiting");
+function exitCleanup(exit) {
     if(nfcdev) {
         console.log("Stopping NFC device");
         nfcdev.stop();
+        nfcdev = null;
+    }
+    if(exit) {
+        console.log("Exiting");
+        process.exit(1);
     }
 }
 
-process.on('exit', exitCleanup.bind(null, 'exit'));
-process.on('SIGINT', exitCleanup.bind(null, 'interrupt'));
-process.on('uncaughtException', exitCleanup.bind(null, 'exception'));
+process.on('exit', exitCleanup.bind(null, false));
+process.on('SIGINT', exitCleanup.bind(null, true));
+process.on('SIGTERM', exitCleanup.bind(null, true));
+//process.on('uncaughtException', exitCleanup.bind(null, true));
 
 function findMagStripeReader() {
     var devices = HID.devices();
@@ -221,9 +226,9 @@ function init_nfc(callback) {
     
     nfcdev.on('read', function(tag) {
         if(!tag.uid) {
-            return
+            return;
         }
-
+        
         hash.update(tag.uid);
         var code = hash.digest('hex');
         
@@ -255,7 +260,9 @@ function init_nfc(callback) {
     });
 
     nfcdev.on('error', function(err) {
+        // all errors are fatal
         console.error("NFC device error: " + err);
+        process.exit(1);
     });
 
     nfcdev.start();
