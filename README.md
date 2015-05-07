@@ -54,4 +54,4 @@ Copyright 2014 Marc Juul
 
 # Known bugs
 
-If no nfc reader is availabe, the nfc library fails with an uncatchable error and a subsequent segfault :(
+If the program is killed (or dies) then the program will stall on next startup until an rfid chip is scanned. This is because of this problem: https://github.com/camme/node-nfc/issues/9

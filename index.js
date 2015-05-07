@@ -10,22 +10,41 @@ var randomstring = require('randomstring');
 var StringDecoder = require('string_decoder').StringDecoder;
 var argv = require('minimist')(process.argv.slice(2));
 
-var magStripeProductName = 'USB Swipe Reader';
+var scancodeDecode = require('./lib/scancode_decode.js');
 
-var serialDevice = '/dev/ttyACM0';
+var settings = require('settings.js');
+
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
 
 var state = 'init'; // The current state of this program. Will change to 'running' after initialization.
 var salt = null;
 var hash = null;
-var serial;
+var arduino = null;
+var nfcdev = null;
+var magdev = null;
+
+function exitCleanup(reason) {
+    console.log("Exiting");
+    if(nfcdev) {
+        console.log("Stopping NFC device");
+        nfcdev.stop();
+    }
+}
+
+process.on('exit', exitCleanup.bind(null, 'exit'));
+process.on('SIGINT', exitCleanup.bind(null, 'interrupt'));
+process.on('uncaughtException', exitCleanup.bind(null, 'exception'));
 
 function findMagStripeReader() {
     var devices = HID.devices();
     var i;
+    var product = false;
     for(i=0; i < devices.length; i++) {
-        if(devices[i].product == magStripeProductName) {
+        if(devices[i].product) {
+            product = true;
+        }
+        if(devices[i].product == settings.magStripeProductName) {
             try {
                 var dev = new HID.HID(devices[i].path);
             } catch(e) {
@@ -35,6 +54,10 @@ function findMagStripeReader() {
             }
             return dev;
         }
+    }
+    if(!product) {
+        console.error("Failed to find magstripe reader");
+        console.error("Hint: You may need to be root");
     }
     return null;
 }
@@ -75,7 +98,7 @@ function logAttempt(line) {
 
 function grantAccess() {
     console.log("Access granted on " + new Date());
-    serial.write("o");
+    arduino.write("o");
 }
 
 
@@ -85,53 +108,109 @@ function makeHash() {
     return hash;
 }
 
+// parse a magcard line
+// return an array of three strings (one for each track)
+//   strings are empty if track didn't exist or had no data
+// returns null if all tracks are empty or there was an error reading any track
+function magParse(line) {
+    if(!line) return null;
+    var f = {
+        '%': 0,
+        ';': 1,
+        '+': 2
+    };
+    var fields = ['', '' , ''];
+    var i, ch;
+    var field;
+    for(i=0; i < line.length; i++) {
+        ch = line[i];
+        if(field !== undefined) {
+            if(ch == '?') {
+                field = undefined;
+                continue;
+            }
+            fields[field] += ch;
+        } else {
+            if(f[ch] !== undefined) {
+                field = f[ch];
+            }
+        }
+    }
+
+    var empty = true;
+    for(i=0; i < fields.length; i++) {
+        if(!fields[i]) {
+            continue;
+        }
+        if((fields.length > 0) && (fields[i].toUpperCase() == 'E')) {
+            return null;
+        }
+        empty = false;
+    }
+    if(empty) {
+        return null;
+    }
+
+    return fields;
+}
+
 function init_magstripe() {
 
     var decoder = new StringDecoder('utf8');
     var magdev = findMagStripeReader();
     if(!magdev) {
-        console.error("Magstripe reader not found. Exiting.");
+        console.error("Magstripe reader not found.");
         return null;
     }
 
-    // the data is raw USB HID scan codes: 
-    // http://www.mindrunway.ru/IgorPlHex/USBKeyScan.pdf
-    magdev.on('data', function(data) { 
-        if(state == 'init') {
-            return; // flush data during init period
-        }
+    magdev.on('data', function(data) {
         
-        // ignore codes that consist of all zeroes
-        var i;
-        var zero = true;
-        for(i=0; i < data.length; i++) {
-            if(data[i] != 0) {
-                zero = false;
+        var str = scancodeDecode(data);
+        if(str) {
+            var i;
+            for(i=0; i < str.length; i++) {
+                magdev.emit('char', str[i]);
             }
         }
-        if(zero) {
+    });
+
+    var lineBuffer = '';
+
+    magdev.on('char', function(char) {
+        lineBuffer += char;
+        
+        if(char == '\n') {
+            magdev.emit('line', lineBuffer);
+            lineBuffer = '';
+        }
+    });
+
+    magdev.on('line', function(line) {
+        var fields = magParse(line);
+        if(!fields) {
+            console.log("Ignored unreadable card");
             return;
         }
-        hash.update(data);
         
-        // 0x28 is the scancode for enter
-        if(data[2] == 0x28) {
-            var line = hash.digest('hex');
-            
-            if(checkACL(line)) {
+        fields = fields.join('');
+
+        hash.update(fields);
+
+        var code = hash.digest('hex');
+
+        if(checkACL(code)) {
             grantAccess();
-            } else {
-                logAttempt(line);
-            }
-            line = '';
-            hash = makeHash();
-    }    
+        } else {
+            logAttempt(code);
+        }
+
+        hash = makeHash();
     });
+    return magdev;
 }
 
 
-function init_nfc(callback, attempt) {
-    attempt = attempt || 0;
+function init_nfc(callback) {
 
     var nfcdev = new nfc.NFC();
     
@@ -163,7 +242,7 @@ function init_nfc(callback, attempt) {
         }
         
         if(checkACL(code)) {
-        grantAccess();
+            grantAccess();
         } else {
             logAttempt(code);
         }
@@ -179,22 +258,8 @@ function init_nfc(callback, attempt) {
         console.error("NFC device error: " + err);
     });
 
-
-    // This is a workaround since the first attempt will sometimes fail
-    // see https://github.com/camme/node-nfc/issues/9
-    try {
-        nfcdev.start();
-        return callback(null, nfcdev);
-    } catch(e) {
-        attempt++;
-        if(attempt > 2) {
-            return callback("Could not initialize NFC device");
-        } else {
-            setTimeout(function() {
-                init_nfc(callback, attempt);
-            }, 300);
-        }
-    }
+    nfcdev.start();
+    return callback(null, nfcdev);
 }
 
 function init_salt() {
@@ -218,7 +283,7 @@ function init_salt() {
 
 function init_arduino_real(callback) {
 
-    var serial = new SerialPort(serialDevice, {
+    var serial = new SerialPort(settings.arduinoDevice, {
         baudrate: 9600,
         databits: 8,
         stopbits: 1,
@@ -283,28 +348,32 @@ if(argv['fake-arduino']) {
     init_arduino = init_arduino_real;
 }
 
-console.log(argv);
-
 console.log("Initializing");
 
-init_arduino(function(err, ser) {
+init_arduino(function(err, ard) {
     if(err) {
         console.error("Could not open serial device (arduino): " + err);
-        return;
+        process.exit(1);
     }
     
-    serial = ser; // set global
+    arduino = ard; // set global
     
     console.log("Opened serial connection to arduino!");
 
     if(!argv['disable-magstripe']) {
         console.log("Initializing magstripe reader");
-        init_magstripe();
+        magdev = init_magstripe();
+        if(!magdev) {
+            console.error("Magstripe initialization failed");
+            process.exit(1);
+        }
+        
     }
 
     if(!argv['disable-rfid']) {
         console.log("Initializing RFID reader");
-        init_nfc(function(err, device) {
+        init_nfc(function(err, dev) {
+            nfcdev = dev;
             if(err) {
                 console.error("Could not initialize NFC device");
                 process.exit(1);

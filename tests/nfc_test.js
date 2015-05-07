@@ -1,6 +1,5 @@
 #!/usr/bin/env nodejs
 
-
 var child_process = require('child_process');
 
 function nfc_scan(callback) {

@@ -1,0 +1,5 @@
+
+module.exports = {
+    arduinoDevice: '/dev/ttyACM0',
+    magStripeProductName: 'USB Swipe Reader'
+};
