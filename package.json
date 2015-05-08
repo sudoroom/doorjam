@@ -19,11 +19,9 @@
     "url": "https://github.com/sudoroom/doorjam.git"
   },
   "dependencies": {
-    "minimist": "^1.1.0",
+    "sleep": "~1.1.8",
     "node-hid": "~0.3.1",
-    "nfc": "git://github.com/juul/node-nfc#master",
-    "randomstring": "~1.0.3",
     "serialport": "~1.4.0",
-    "sleep": "~1.1.8"
+    "randomstring": "~1.0.3"
   }
 }

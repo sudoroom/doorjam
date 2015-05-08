@@ -3,7 +3,7 @@ DoorJam is the meatspace firewall for sudo room
 # Prerequisites
 
 ```
-sudo aptitude install build-essential libusb-1.0-0-dev libnfc-bin
+sudo aptitude install build-essential libusb-1.0-0-dev
 
 npm install
 ```
@@ -51,7 +51,3 @@ You can also use the sudo_grant_access.sh script, but you should edit it to suit
 GPLv3+
 
 Copyright 2014 Marc Juul
-
-# Known bugs
-
-If no nfc reader is availabe, the nfc library fails with an uncatchable error and a subsequent segfault :(
