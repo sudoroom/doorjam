@@ -45,6 +45,7 @@ serial.on('error', function(err) {
         console.log("Could not open serial device (arduino). Exiting.");
         process.exit(1);
     }
+    else process.exit(1)
 });
 
 // there is a fake open event before the real one
