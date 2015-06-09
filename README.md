@@ -51,3 +51,7 @@ You can also use the sudo_grant_access.sh script, but you should edit it to suit
 GPLv3+
 
 Copyright 2014 Marc Juul
+blacklist the following hashes (magstripe error codes):
+b8548d912086cc19f0f4633a4307af3c35b6ea81
+dd51c7f8b6b1c7b478217b10cb228a0d1d5fb310
+1d9358c91b137d93541672ff240b3f795587bd6d
