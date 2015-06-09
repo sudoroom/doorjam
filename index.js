@@ -98,7 +98,7 @@ function checkACL(inputline) {
     }
     var acl = fs.readFileSync('access_control_list', {encoding: 'utf8'}).split("\n");
 
-    var i, line;
+    var i, line, prevCommment;
     for(i=0; i < acl.length; i++) {
         line = acl[i];
         line = line.replace(/\s+/g, ''); // remove whitespace
@@ -106,9 +106,11 @@ function checkACL(inputline) {
             continue; // skip lines that are too short (includes empty lines)
         }
         if(line[0] == '#') {
+            prevComment = line;
             continue; // skip comments 
         }
         if(line == inputline) {
+            console.log(prevComment);
             return true;
         }
     }
