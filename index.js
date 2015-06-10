@@ -60,8 +60,8 @@ serial.pipe(split()).pipe(through(function(data,encoding,next) {
             console.log('WTF arduino sent ^voltage and then NaN');
         }
     }
-    if(/^opening/.test(data)) health.lastMotor = Date.now()
-    if(/^closing/.test(data)) health.lastMotor = Date.now()
+    if(/opening/.test(data)) health.lastMotor = Date.now()
+    if(/closing/.test(data)) health.lastMotor = Date.now()
     next()
 }));
 
