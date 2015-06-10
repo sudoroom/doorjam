@@ -217,9 +217,13 @@ console.log("Initializing");
 
 setTimeout(endInit, initPeriod);
 
-setInterval(function () {
-    serial.write("b"); // tell arduino to tell us the battery voltage
-}, 1000 * 60 * 1); // every 1 minute
+function batteryRequest() {
+    serial.write("b") // tell arduino to send us voltage
+}
+
+setTimeout(batteryRequest, 1000 * 30); // tell arduino to send us voltage before first health report
+
+setInterval(batteryRequest, 1000 * 60 * 1); // then every 1 minute
 
 setInterval(function () {
     health.sinceMotor = Date.now() - health.lastMotor
