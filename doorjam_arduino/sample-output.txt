@@ -1,0 +1,29 @@
+below is a sample of what comes out of the arduino when you boot it, lock the (already locked) door, ask it the voltage, lock again, open...
+
+Hello world, this is the door
+closing!
+287.90
+72.70   (86 lines deleted)
+112.66  (it was already in the closed position i think)
+169.04
+overcurrent!
+voltage:
+12.38
+closing!
+293.94
+191.84
+118.64
+76.02  (80 lines deleted)
+67.78
+107.70
+167.10
+overcurrent!
+opening door!
+293.94
+191.84
+118.64
+76.02  (?? lines deleted)
+67.78
+107.70
+167.10
+overcurrent!
