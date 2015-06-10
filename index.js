@@ -43,8 +43,9 @@ var serial = new SerialPort(serialDevice, {
 });
 
 var health = { // data from the arduino
-    voltage : 0.0, // what voltage has the arduino reported?
-    voltageTime : 0, // when did we last get a voltage update?
+    voltage : -1, // what voltage has the arduino reported?
+    sinceVoltage : 0, // how long since the lasts voltage update?
+    lastVoltage : 0, // when did we last get a voltage update?
     sinceMotor : 0, // how long since the last time the motor was activated?
     lastMotor : 0 // what (local) time was motor last activated?
 }
@@ -53,7 +54,7 @@ serial.pipe(split()).pipe(through(function(data,encoding,next) {
     if(/^voltage/.test(data)) { // if the arduino will tell us voltage
         health.voltage = parseFloat(data.toString().split(/\s+/)[1])
         if(!isNaN(health.voltage)) {
-            health.voltageTime = Date.now()
+            health.lastVoltage = Date.now()
             console.log('voltage is ',health.voltage);
         } else {
             console.log('WTF arduino sent ^voltage and then NaN');
@@ -222,5 +223,6 @@ setInterval(function () {
 
 setInterval(function () {
     health.sinceMotor = Date.now() - health.lastMotor
+    health.sinceVoltage = Date.now() - health.lastVoltage
     console.log('health',JSON.stringify(health))
 }, 1000 * 60 * 1); // every 1 minute
