@@ -67,15 +67,12 @@ serial.pipe(split()).pipe(through(function(data,encoding,next) {
 
 serial.on('error', function(err) {
     console.log('SERIAL ERROR', err);
-    if(true || state == 'init') {
-        console.log("Could not open serial device (arduino). Exiting.");
-        process.exit(1);
-    }
+    process.exit(1);
 });
 
 serial.on('close', function () {
-    console.log('Lost serial connection. Closing.');
-    process.exit(0);
+    console.log('SERIAL ERROR serial closed');
+    process.exit(1);
 });
 
 // there is a fake open event before the real one
@@ -207,6 +204,10 @@ dev.on('data', function(data) {
     }    
 });
 
+dev.on('error', function(err) {
+    console.log('MAGSTRIPE ERROR', err)
+    process.exit(1);
+});
 
 function endInit() {
     state = 'running';
