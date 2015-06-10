@@ -50,7 +50,7 @@
 float voltage = 0;
 
 void reportVoltage() {
-  Serial.println("voltage:");
+  Serial.print("voltage ");
   unsigned long voltAdder = 0;
   for (int i = 0; i < AVG_CYCLES; i++) {
     voltAdder += analogRead(VOLT_SENSE);
