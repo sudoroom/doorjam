@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+var split=require('split2');
+var through=require('through2');
+
 var fs = require('fs');
 var HID = require('node-hid');
 var crypto = require('crypto');
@@ -38,6 +41,24 @@ var serial = new SerialPort(serialDevice, {
     parity: 'none',
     openImmediately: false
 });
+
+var health = { // data from the arduino
+    voltage : 0.0, // what voltage has the arduino reported?
+    voltageTime : 0 // when did we last get a voltage update?
+}
+
+serial.pipe(split()).pipe(through(function(data,encoding,next) {
+    if(/^voltage/.test(data)) { // if the arduino will tell us voltage
+        health.voltage = parseFloat(data.toString().split(/\s+/)[1])
+        if(!isNaN(health.voltage)) {
+            health.voltageTime = Date.now()
+            console.log('voltage is ',health.voltage);
+        } else {
+            console.log('WTF arduino sent ^voltage and then NaN');
+        }
+    }
+    next()
+}));
 
 serial.on('error', function(err) {
     console.log('SERIAL ERROR', err);
@@ -190,3 +211,11 @@ function endInit() {
 console.log("Initializing");
 
 setTimeout(endInit, initPeriod);
+
+setInterval(function () {
+    serial.write("b"); // tell arduino to tell us the battery voltage
+}, 1000 * 60 * 1); // every 1 minute
+
+setInterval(function () {
+    console.log('health',JSON.stringify(health))
+}, 1000 * 60 * 1); // every 1 minute
