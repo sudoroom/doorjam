@@ -10,9 +10,9 @@ var randomstring = require('randomstring');
 var StringDecoder = require('string_decoder').StringDecoder;
 var argv = require('minimist')(process.argv.slice(2));
 
-var scancodeDecode = require('./lib/scancode_decode.js');
+var scancodeDecode = require('../lib/scancode_decode.js');
 
-var settings = require('./settings.js');
+var settings = require('../settings.js');
 
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
@@ -333,14 +333,14 @@ function init_arduino_real(callback) {
     function batteryRequest() {
         serial.write("b"); // tell arduino to tell us the battery voltage
     }
-    setTimeout(batteryRequest, 1000 * 30); // tell arduino to send us voltage before first health report
+    setTimeout(batteryRequest, 1000 * 20); // tell arduino to send us voltage before first health report
     setInterval(batteryRequest, 1000 * 60 * 1); // then every 1 minute
 
     setInterval(function () {
-        health.sinceMotor = Date.now() - health.lastMotor;
-        health.sinceVoltage = Date.now() - health.lastVoltage;
+        if(health.lastMotor) health.sinceMotor = Date.now() - health.lastMotor;
+        if(health.lastVoltage) health.sinceVoltage = Date.now() - health.lastVoltage;
         console.log('health', JSON.stringify(health)) // log health to console
-    }, 1000 * 60 * 1); // every 1 minute
+    }, 1000 * 30 * 1); // every 30 seconds
 
     serial.on('error', function(err) {
         console.error(err);
@@ -363,6 +363,22 @@ function init_arduino_real(callback) {
 }
 
 function init_arduino_fake(callback) {
+
+    function fakeBatteryRequest() {
+        health.voltage = 14;
+        health.lastVoltage = Date.now();
+        console.log('fake voltage is ', health.voltage);
+    }
+
+    setTimeout(fakeBatteryRequest, 1000 * 20); // tell arduino to send us voltage before first health report
+    setInterval(fakeBatteryRequest, 1000 * 60 * 1); // then every 1 minute
+
+    setInterval(function () {
+        if(health.lastMotor) health.sinceMotor = Date.now() - health.lastMotor;
+        if(health.lastVoltage) health.sinceVoltage = Date.now() - health.lastVoltage;
+        console.log('health', JSON.stringify(health)) // log health to console
+    }, 1000 * 30 * 1); // every 30 seconds
+
     callback(null, {
         write: function(str) {
             console.log("[fake arduino write]: " + str);
