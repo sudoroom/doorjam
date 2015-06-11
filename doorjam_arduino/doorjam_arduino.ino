@@ -45,7 +45,19 @@
 
 //Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, LED_DATA, NEO_GRB + NEO_KHZ800);
 
+#define VOLTCOEFF 0.02704 // 2.2k and 10k ohm resistor divider
+#define VOLT_SENSE A5 // pin where voltage divider is connected
+float voltage = 0;
 
+void reportVoltage() {
+  Serial.print("voltage ");
+  unsigned long voltAdder = 0;
+  for (int i = 0; i < AVG_CYCLES; i++) {
+    voltAdder += analogRead(VOLT_SENSE);
+  }
+  voltage = (float)voltAdder / (float)AVG_CYCLES * VOLTCOEFF;
+  Serial.println(voltage,2);
+}
 
 void happyTone() {
   tone (SPEAKER, HAPPYTONE, HAPPYTIME);
@@ -133,6 +145,7 @@ void loop() {
     if (inByte == 'o') doorOpen();
     if (inByte == 'c') doorClose();
     if (inByte == 's') sadTone(); // use this when a card is rejected
+    if (inByte == 'b') reportVoltage();
     while (Serial.available()) { // read all bytes in the buffer until the the buffer is empty
       byte throwAway = Serial.read();
     }

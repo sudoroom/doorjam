@@ -24,6 +24,14 @@ var arduino = null;
 var nfcdev = null;
 var magdev = null;
 
+var health = { // data from the arduino
+    voltage : -1, // what voltage has the arduino reported?
+    sinceVoltage : 0, // how long since the lasts voltage update?
+    lastVoltage : 0, // when did we last get a voltage update?
+    sinceMotor : 0, // how long since the last time the motor was activated?
+    lastMotor : 0 // what (local) time was motor last activated?
+}
+
 function exitCleanup(exit) {
     if(nfcdev) {
         console.log("Stopping NFC device");
@@ -75,7 +83,7 @@ function checkACL(inputline) {
     }
     var acl = fs.readFileSync('access_control_list', {encoding: 'utf8'}).split("\n");
 
-    var i, line;
+    var i, line, prevComment;
     for(i=0; i < acl.length; i++) {
         line = acl[i];
         line = line.replace(/\s+/g, ''); // remove whitespace
@@ -83,9 +91,11 @@ function checkACL(inputline) {
             continue; // skip lines that are too short (includes empty lines)
         }
         if(line[0] == '#') {
+            prevComment = line;
             continue; // skip comments 
         }
         if(line == inputline) {
+            console.log("Access granted to: " +prevComment);
             return true;
         }
     }
@@ -167,6 +177,11 @@ function init_magstripe() {
         console.error("Magstripe reader not found.");
         return null;
     }
+
+    magdev.on('error', function(err) {
+        console.error("Magstripe error: " + err);
+        process.exit(1);
+    });
 
     magdev.on('data', function(data) {
         
@@ -298,16 +313,51 @@ function init_arduino_real(callback) {
         openImmediately: false
     });
     
+    serial.pipe(split()).pipe(through(function(data,encoding,next) {
+        if(/^voltage/.test(data)) { // if the arduino will tell us voltage
+            health.voltage = parseFloat(data.toString().split(/\s+/)[1])
+            if(!isNaN(health.voltage)) {
+                health.lastVoltage = Date.now()
+                console.log('voltage is ',health.voltage);
+            } else {
+                console.log('WTF arduino sent ^voltage and then NaN');
+            }
+        } else if(/opening/.test(data)) {
+            health.lastMotor = Date.now();
+        } else if(/closing/.test(data)) {
+            health.lastMotor = Date.now();
+        }
+        next();
+    }));
+    
+    function batteryRequest() {
+        serial.write("b"); // tell arduino to tell us the battery voltage
+    }
+    setTimeout(batteryRequest, 1000 * 30); // tell arduino to send us voltage before first health report
+    setInterval(batteryRequest, 1000 * 60 * 1); // then every 1 minute
+
+    setInterval(function () {
+        health.sinceMotor = Date.now() - health.lastMotor;
+        health.sinceVoltage = Date.now() - health.lastVoltage;
+        console.log('health', JSON.stringify(health)) // log health to console
+    }, 1000 * 60 * 1); // every 1 minute
+
     serial.on('error', function(err) {
         console.error(err);
         if(state == 'init') {
             return callback(err);
         }
+        process.exit(1);
     });
     
     var openEvents = 0;
     serial.on('open', function() {
         return callback(null, serial);
+    });
+
+    serial.on('close', function() {
+        console.log("Lost serial connection. Exiting");
+        process.exit(1);
     });
     
 }
