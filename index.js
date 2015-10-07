@@ -142,7 +142,7 @@ function checkACL(inputline) {
 
 function logAttempt(line) {
     console.log("Access denied. Your attempt has been logged.");
-    serial.write("o"); // make the speaker make a sad sound :(
+    serial.write("s"); // make the speaker make a sad sound :(
 
     fs.appendFileSync('failed_attempts', JSON.stringify({
         code: line,
