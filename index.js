@@ -13,7 +13,7 @@ var StringDecoder = require('string_decoder').StringDecoder;
 
 var magStripeProductName = 'USB Swipe Reader';
 
-var serialDevice = '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_74937303936351111051-if00';
+var serialDevice = '/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A9007KT3-if00-port0';
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
 
@@ -142,6 +142,7 @@ function checkACL(inputline) {
 
 function logAttempt(line) {
     console.log("Access denied. Your attempt has been logged.");
+    serial.write("o"); // make the speaker make a sad sound :(
 
     fs.appendFileSync('failed_attempts', JSON.stringify({
         code: line,
