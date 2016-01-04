@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo SETTING FILESYSTEM TO READ-WRITE
+mount -o remount,rw /

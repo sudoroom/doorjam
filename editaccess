@@ -1,0 +1,7 @@
+if grep "ec2c7555affb / ext4 ro" /proc/mounts > /dev/null; then
+	rwroot
+	vim /root/doorjam/access_control_list
+	roroot
+else
+	vim /root/doorjam/access_control_list
+fi

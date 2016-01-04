@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo SETTING FILESYSTEM TO READ-ONLY
+sync
+mount -o remount,ro /

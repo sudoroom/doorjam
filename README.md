@@ -46,6 +46,10 @@ ssh root@192.168.1.2 "cd /root/doorjam; ./grant_access_to_last_attempt.js <name 
 
 You can also use the sudo_grant_access.sh script, but you should edit it to suit your environment.
 
+change /etc/bash.bashrc to remind you when the filesystem is not read-only:
+# PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+PS1='${debian_chroot:+($debian_chroot)}\u@\h`if grep "ec2c7555affb / ext4 rw" /proc/mounts > /dev/null; then echo \ FILESYSTEM IS WRITABLE, RUN roroot TO FIX; fi`:\w\$ '
+
 # License and copyright
 
 GPLv3+
