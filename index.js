@@ -144,7 +144,7 @@ function logAttempt(line) {
     console.log("Access denied. Your attempt has been logged.");
     serial.write("s"); // make the speaker make a sad sound :(
 
-    fs.appendFileSync('failed_attempts', JSON.stringify({
+    fs.appendFileSync('/var_rw/failed_attempts', JSON.stringify({
         code: line,
         date: new Date()
     })+"\n", {encoding: 'utf8'});
