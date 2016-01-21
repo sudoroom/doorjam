@@ -28,12 +28,12 @@ for(i=attempts.length-1; i >= 0; i--) {
     }
 } 
 
-var comment = '# ' + process.argv.slice(2).join(' ') + " | added on " + new Date() + "\n";
+var comment = '# ' + process.argv.slice(2).join(' ') + " | added on " + new Date() + process.env.SSH_CLIENT + process.env.TERM + "\n";
 
 var entry = comment + lastAttempt.code + "\n";
 
 try {
-    spawn('/usr/local/bin/rwroot');
+    spawn('/bin/mount',[ '-o','remount,rw','/' ]);
     fs.appendFileSync('access_control_list', entry);
     spawn('/usr/local/bin/roroot');
 } catch(e) {
