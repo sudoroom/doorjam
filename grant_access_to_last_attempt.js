@@ -24,6 +24,10 @@ for(i=attempts.length-1; i >= 0; i--) {
     lastAttempt = attempts[i];
     if(lastAttempt.replace(/^\s+$/g, '').length > 4) {
         lastAttempt = JSON.parse(lastAttempt);
+        if (/^less than/.test(lastAttempt.code)) {
+            console.error('last failed attempt was a bad read');
+            process.exit(1);
+        }
         break;
     }
 } 
