@@ -141,7 +141,7 @@ function checkACL(inputline) {
 }
 
 function logAttempt(line) {
-    console.log("Access denied. Your attempt has been logged.");
+    console.log("Access denied. Your attempt has been logged. " + new Date());
     serial.write("s"); // make the speaker make a sad sound :(
 
     fs.appendFileSync('/var_rw/failed_attempts', JSON.stringify({
@@ -172,11 +172,11 @@ var hash = makeHash();
 
 // the data is raw USB HID scan codes: 
 // http://www.mindrunway.ru/IgorPlHex/USBKeyScan.pdf
+var dataSize = 0;
 dev.on('data', function(data) { 
     if(state == 'init') {
         return; // flush data during init period
     }
-    
     // ignore codes that consist of all zeroes
     var i;
     var zero = true;
@@ -188,6 +188,8 @@ dev.on('data', function(data) {
     if(zero) {
         return;
     }
+    // console.log(data.toString('hex')); // for debugging to figure out what error codes look like
+    dataSize += data.length;
     hash.update(data);
     
     // 0x28 is the scancode for enter
@@ -195,12 +197,15 @@ dev.on('data', function(data) {
         var line = hash.digest('hex');
         console.log(line);
         
-        if(checkACL(line)) {
+        if(dataSize >= 100 && checkACL(line)) {
             grantAccess();
+        } else if (dataSize < 100) {
+            logAttempt('less than 100 bytes: ' + dataSize + ' bytes');
         } else {
             logAttempt(line);
         }
         line = '';
+        dataSize = 0;
         hash = makeHash();
     }    
 });
