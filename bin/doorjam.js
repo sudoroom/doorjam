@@ -392,7 +392,7 @@ function init_done() {
 }
 
 function usage(f) {
-    f = f || prcess.stderr;
+    f = f || process.stderr;
 
     f.write("usage: sudo index.js\n");
     f.write("\n");
