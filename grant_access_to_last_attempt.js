@@ -77,7 +77,7 @@ function addUser (answers) {
 
     try {
         spawn('/bin/mount',[ '-o','remount,rw','/' ]);
-        fs.appendFileSync('access_control_list', entry);
+        fs.appendFileSync(__dirname + '/access_control_list', entry);
         spawn('/usr/local/bin/roroot');
     } catch(e) {
         console.log("Error: Hm. Are you sure you have permission to write to the access_control_list file?")
