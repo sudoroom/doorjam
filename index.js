@@ -145,8 +145,8 @@ function logAttempt(line) {
     serial.write("s"); // make the speaker make a sad sound :(
 
     fs.appendFileSync('/var_rw/failed_attempts', JSON.stringify({
-        code: line,
         date: (new Date()).toString(),
+        code: line
     })+"\n", {encoding: 'utf8'});
 }
 
