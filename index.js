@@ -146,7 +146,7 @@ function logAttempt(line) {
 
     fs.appendFileSync('/var_rw/failed_attempts', JSON.stringify({
         code: line,
-        date: new Date()
+        date: (new Date()).toString(),
     })+"\n", {encoding: 'utf8'});
 }
 
