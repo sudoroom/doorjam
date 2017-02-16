@@ -1,5 +1,6 @@
 *~
 access_control_list
+access_control_list.backup
 failed_attempts
+node_modules/
 SALT
-
