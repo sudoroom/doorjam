@@ -2,6 +2,5 @@
 access_control_list
 access_control_list.backup
 doorjam_arduino/.Makefile.swp
-failed_attempts
 node_modules/
 SALT
