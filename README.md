@@ -3,7 +3,7 @@ DoorJam is the meatspace firewall for sudo room
 # Prerequisites
 
 ```
-sudo aptitude install build-essential libusb-1.0-0-dev libnfc-bin
+sudo aptitude install build-essential libusb-1.0-0-dev
 
 npm install
 ```
@@ -46,12 +46,22 @@ ssh root@192.168.1.2 "cd /root/doorjam; ./grant_access_to_last_attempt.js <name 
 
 You can also use the sudo_grant_access.sh script, but you should edit it to suit your environment.
 
+change /etc/bash.bashrc to remind you when the filesystem is not read-only:
+# PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+PS1='${debian_chroot:+($debian_chroot)}\u@\h`if grep "ec2c7555affb / ext4 rw" /proc/mounts > /dev/null; then echo \ FILESYSTEM IS WRITABLE, RUN roroot TO FIX; fi`:\w\$ '
+
 # License and copyright
 
 GPLv3+
 
 Copyright 2014 Marc Juul
-
-# Known bugs
-
-If the program is killed (or dies) then the program will stall on next startup until an rfid chip is scanned. This is because of this problem: https://github.com/camme/node-nfc/issues/9
+blacklist the following hashes (magstripe error codes):
+b8548d912086cc19f0f4633a4307af3c35b6ea81
+dd51c7f8b6b1c7b478217b10cb228a0d1d5fb310
+1d9358c91b137d93541672ff240b3f795587bd6d
+05475cb790516f8bdd63504f24c295ddea6f086a (i think)
+1177c84cedb98aca496cb2997d84f654a902f1dc
+2d71b8483fb11a1e52849c3ce54c07f43b640852
+684f2ce81f430e49406911da84c44cc3a9b65230
+7d7b38dbdd71860c9c4502505a0cb5842bfa9fe6
+4adc1dbd9253e3ec41bc037d2f5fd393c790ece5

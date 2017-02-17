@@ -17,9 +17,9 @@
 #define LED_DATA 2 // adafruit neopixel ws2811 ws2812 style LEDs (six)
 
 #define SADTONE 200 // sad tone frequency
-#define SADTIME 500 // sadtone time in milliseconds
+#define SADTIME 1000 // sadtone time in milliseconds
 #define HAPPYTONE 1000  // happy tone frequency
-#define HAPPYTIME 500  // happy tone time in milliseconds
+#define HAPPYTIME 1000  // happy tone time in milliseconds
 
 #define CHA_DIR 12
 #define CHA_PWM 3
@@ -30,16 +30,14 @@
 #define CHB_BRK 8
 #define CHB_SENSE A1
 
-#define OPEN_TIME 14000 // milliseconds how long to run the motor
-#define CLOSE_TIME 14000
+#define OPEN_TIME 8000 // milliseconds how long to run the motor
 #define OPEN_CURRENTMAX 140 // analogRead() value, not amps or anything
 #define CLOSE_CURRENTMAX 140 // change this to 70 to be able to trip it by hand
 #define MOTOR_START_TIME 150 // milliseconds before we start looking at current draw
 #define OPEN_RETRACT_TIME 500 // milliseconds to reverse motor after hitting current limit
 #define CLOSE_RETRACT_TIME 500 // milliseconds to reverse motor after hitting current limit
 
-#define LOCK_BTN_PIN 7
-#define UNLOCK_BTN_PIN 4
+#define UNLATCH_DETECT_PIN 4
 
 #define AVG_CYCLES 50.0 // how many times to read analogRead and average reading
 
@@ -79,47 +77,12 @@ void doorOpen() {
     float current = 0;
     for (int i = 0; i < AVG_CYCLES; i++) current += analogRead(CHB_SENSE); // read a bunch of times
     current = current / AVG_CYCLES; // get the average current reading
-    Serial.println(current);
     if ((millis() - now > MOTOR_START_TIME) && (current > OPEN_CURRENTMAX)) {
       overcurrent = true;
       Serial.println("overcurrent!");
     }
   }
   digitalWrite(CHB_PWM,LOW); // turn motor off
-  if (overcurrent) {
-    delay(100); // wait for motor to stop turning
-    digitalWrite(CHB_DIR,HIGH); // REVERSE DIRECTION
-    digitalWrite(CHB_PWM,HIGH); // turn motor on
-    delay(OPEN_RETRACT_TIME); // reverse course (to remove physical tension of jam)
-    digitalWrite(CHB_PWM,LOW); // turn motor off
-  }
-}
-
-void doorClose() { // yes i know it should be one subroutine to open and close, sorry.
-  Serial.println("closing!");
-  //happyTone(); // tone is not blocking
-  digitalWrite(CHB_DIR,HIGH);
-  digitalWrite(CHB_PWM,HIGH); // turn motor on
-  unsigned long now = millis();
-  boolean overcurrent = false;
-  while (millis() - now < CLOSE_TIME && !overcurrent) {
-    float current = 0;
-    for (int i = 0; i < AVG_CYCLES; i++) current += analogRead(CHB_SENSE); // read a bunch of times
-    current = current / AVG_CYCLES; // get the average current reading
-    Serial.println(current);
-    if ((millis() - now > MOTOR_START_TIME) && (current > CLOSE_CURRENTMAX)) {
-      overcurrent = true;
-      Serial.println("overcurrent!");
-    }
-  }
-  digitalWrite(CHB_PWM,LOW); // turn motor off
-  if (overcurrent) {
-    delay(100); // wait for motor to stop turning
-    digitalWrite(CHB_DIR,LOW); // REVERSE DIRECTION
-    digitalWrite(CHB_PWM,HIGH); // turn motor on
-    delay(CLOSE_RETRACT_TIME); // reverse course (to remove physical tension of jam)
-    digitalWrite(CHB_PWM,LOW); // turn motor off
-  }
 }
 
 void setup() {
@@ -131,42 +94,26 @@ void setup() {
   pinMode(CHB_DIR,OUTPUT);
   pinMode(CHB_PWM,OUTPUT);
   pinMode(CHB_BRK,OUTPUT);
-  digitalWrite(LOCK_BTN_PIN, HIGH); // enable internal pull-up resistor
-  digitalWrite(UNLOCK_BTN_PIN, HIGH); // enable internal pull-up resistor
+  digitalWrite(UNLATCH_DETECT_PIN, HIGH); // enable internal pull-up resistor
   pinMode(SPEAKER,OUTPUT);
 }
-
-int openButtonState = 0;
-int closeButtonState = 0;
 
 void loop() {
   if (Serial.available()) {  // if a byte appears on the serial port
     byte inByte = Serial.read();
     if (inByte == 'o') doorOpen();
-    if (inByte == 'c') doorClose();
+    if (inByte == 'c') {
+      Serial.println();
+      if (digitalRead(UNLATCH_DETECT_PIN)) {
+        Serial.println("Latched");
+      } else Serial.println("Unlatched");
+    }
+
+    if (inByte == 'h') happyTone(); // use this when?
     if (inByte == 's') sadTone(); // use this when a card is rejected
     if (inByte == 'b') reportVoltage();
     while (Serial.available()) { // read all bytes in the buffer until the the buffer is empty
       byte throwAway = Serial.read();
     }
   }
-
-  if (!digitalRead(UNLOCK_BTN_PIN)) {
-    openButtonState += 1;
-    Serial.print("U");
-  } else openButtonState = 0;
-
-  if (!digitalRead(LOCK_BTN_PIN)) {
-    closeButtonState += 1;
-    Serial.print("L");
-  } else closeButtonState = 0;
-  
-  if(openButtonState > 25) {
-    doorOpen();
-    openButtonState = 0;
-  } else if(closeButtonState > 25) {
-    doorClose();
-    closeButtonState = 0;
-  }
-
 }

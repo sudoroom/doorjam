@@ -1,6 +1,0 @@
-
-module.exports = {
-    arduinoDevice: '/dev/ttyACM0',
-    magStripeProductName: 'USB Swipe Reader',
-    watchdogDevice: '/dev/watchdog' // Used by watchdog command
-};

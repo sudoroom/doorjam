@@ -1,0 +1,8 @@
+if grep "ec2c7555affb / ext4 ro" /proc/mounts > /dev/null; then
+	echo SETTING FILESYSTEM TO READ-WRITE
+	mount -o remount,rw /
+	vim /root/doorjam/access_control_list
+	roroot
+else
+	vim /root/doorjam/access_control_list
+fi
