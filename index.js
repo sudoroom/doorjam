@@ -10,6 +10,7 @@ var SerialPort = require('serialport').SerialPort;
 var sleep = require('sleep').sleep;
 var randomstring = require('randomstring');
 var StringDecoder = require('string_decoder').StringDecoder;
+var dgram = require('dgram');
 
 var magStripeProductName = 'USB Swipe Reader';
 
@@ -19,6 +20,8 @@ var initPeriod = 500; // time to stay in init period in ms (when buffer is flush
 
 var state = 'init'; // The current state of this program. Will change to 'running' after initialization.
 var salt = null;
+
+var socketPort = 13667; // port of loopback control socket
 
 if(!fs.existsSync('SALT')) {
     console.log("=========== WARNING ===========");
@@ -237,3 +240,21 @@ setInterval(function () {
     health.sinceVoltage = Date.now() - health.lastVoltage
     console.log('health',JSON.stringify(health))
 }, 1000 * 60 * 1); // every 1 minute
+
+// Listen for socket commands and pass them through to the serial port
+var server = dgram.createSocket('udp4');
+
+server.on('error', function (err) {
+    console.error('socket server error: ' + err)
+});
+
+server.on('message', function (msg, rinfo) {
+    switch (msg.toString('ascii')) {
+        case 'o': return grantAccess();
+    }
+});
+
+server.bind(socketPort, '127.0.0.1', function () {
+    var address = server.address();
+    console.log('dgram server listening on localhost:'+socketPort)
+});
