@@ -237,3 +237,6 @@ setInterval(function () {
     health.sinceVoltage = Date.now() - health.lastVoltage
     console.log('health',JSON.stringify(health))
 }, 1000 * 60 * 1); // every 1 minute
+
+// allow granting access from outside the process
+process.on('SIGUSR2', grantAccess);
