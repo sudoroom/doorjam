@@ -16,6 +16,32 @@ If the card is not recognized then its hash is logged in the failed_attempts fil
 
 Swipe a new card and run the grant_access_to_last_failed_attempt.js script to grant people access.
 
+*Warning: If the last failed swipe was improperly registered, then you could potentially be granting access to one of several common error codes, rendering the system insecure.*
+
+People seeking access can also swipe their own cards (at least 3x) and fill out the form at https://omnicommons.org/keys/
+
+Recommended cards are Safeway, Peets, and other store membership cards. Hotel keycards do not work. Recommend that folks not use cards with identifying or otherwise valuable information such as credit cards.
+
+## Step-by-step:
+* Ensure you're on the local SSID peoplesopen.net or otherwise logged into room.sudoroom.org
+* You must be on a mac or linux machine with avahi-daemon installed
+```
+ssh root@omnidoor.local 
+
+rwroot
+
+tail -f /var_rw/failed_attempts
+```
+* Swipe card three times
+* Ensure last 3 failed attempts match each other
+```
+./grant_access_to_last_attempt.js <name>
+```
+* Check that card works!
+```
+roroot
+```
+
 # Autostart on boot
 
 ## With forever (autostart on fail)
