@@ -32,7 +32,7 @@ for(i=attempts.length-1; i >= 0; i--) {
         }
         break;
     }
-} 
+}
 
 askPrompts([
     { key: 'announce', msg: 'How should the IRC bot announce this user?' },
@@ -76,9 +76,11 @@ function addUser (answers) {
     var entry = comment + lastAttempt.code + "\n";
 
     try {
-        spawn('/bin/mount',[ '-o','remount,rw','/' ]);
-        fs.appendFileSync(__dirname + '/access_control_list', entry);
-        spawn('/usr/local/bin/roroot');
+        spawn('/bin/mount',[ '-o','remount,rw','/' ])
+          .stdout.on('data', function(){
+            fs.appendFileSync(__dirname + '/access_control_list', entry);
+            spawn('/usr/local/bin/roroot');
+          })
     } catch(e) {
         console.log("Error: Hm. Are you sure you have permission to write to the access_control_list file?")
         process.exit(1);
