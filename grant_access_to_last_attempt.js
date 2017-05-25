@@ -77,7 +77,7 @@ function addUser (answers) {
 
     try {
         spawn('/bin/mount',[ '-o','remount,rw','/' ])
-          .stdout.on('data', function(){
+          .stdout.on('end', function(){
             fs.appendFileSync(__dirname + '/access_control_list', entry);
             spawn('/usr/local/bin/roroot');
           })
