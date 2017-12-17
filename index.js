@@ -2,7 +2,6 @@
 
 var split=require('split2');
 var through=require('through2');
-
 var fs = require('fs');
 var HID = require('node-hid');
 var crypto = require('crypto');
@@ -10,13 +9,11 @@ var SerialPort = require('serialport').SerialPort;
 var sleep = require('sleep').sleep;
 var randomstring = require('randomstring');
 var StringDecoder = require('string_decoder').StringDecoder;
-
+var scancodeDecode = require('./lib/scancode_decode.js');
 var magStripeProductName = 'USB Swipe Reader';
-
 var serialDevice = '/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A9007KT3-if00-port0';
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
-
 var state = 'init'; // The current state of this program. Will change to 'running' after initialization.
 var salt = null;
 
@@ -162,6 +159,53 @@ function makeHash() {
     return hash;
 }
 
+
+// parse a magcard line
+// return an array of three strings (one for each track)
+//   strings are empty if track didn't exist or had no data
+// returns null if all tracks are empty or there was an error reading any track
+function magParse(line) {
+    if(!line) return null;
+    var f = {
+        '%': 0,
+        ';': 1,
+        '+': 2
+    };
+    var fields = ['', '' , ''];
+    var i, ch;
+    var field;
+    for(i=0; i < line.length; i++) {
+        ch = line[i];
+        if(field !== undefined) {
+            if(ch == '?') {
+                field = undefined;
+                continue;
+            }
+            fields[field] += ch;
+        } else {
+            if(f[ch] !== undefined) {
+                field = f[ch];
+            }
+        }
+    }
+
+    var empty = true;
+    for(i=0; i < fields.length; i++) {
+        if(!fields[i]) {
+            continue;
+        }
+        if((fields.length > 0) && (fields[i].toUpperCase() == 'E')) {
+            return null;
+        }
+        empty = false;
+    }
+    if(empty) {
+        return null;
+    }
+
+    return fields;
+}
+
 var decoder = new StringDecoder('utf8');
 var dev = findMagStripeReader();
 if(!dev) {
@@ -169,47 +213,43 @@ if(!dev) {
 }
 
 var hash = makeHash();
-
-// the data is raw USB HID scan codes: 
-// http://www.mindrunway.ru/IgorPlHex/USBKeyScan.pdf
-var dataSize = 0;
-dev.on('data', function(data) { 
-    if(state == 'init') {
-        return; // flush data during init period
-    }
-    // ignore codes that consist of all zeroes
-    var i;
-    var zero = true;
-    for(i=0; i < data.length; i++) {
-        if(data[i] != 0) {
-            zero = false;
+var hash_oldstyle = makeHash();
+var code_oldstyle = '';
+dev.on('data', function(data) {
+    hash_oldstyle.update(data);
+    code_oldstyle = hash_oldstyle.digest('hex');
+    var str = scancodeDecode(data);
+    if(str) {
+        var i;
+        for(i=0; i < str.length; i++) {
+            dev.emit('char', str[i]);
         }
     }
-    if(zero) {
-        return;
-    }
-    // console.log(data.toString('hex')); // for debugging to figure out what error codes look like
-    dataSize += data.length;
-    hash.update(data);
-    
-    // 0x28 is the scancode for enter
-    if(data[2] == 0x28) {
-        var line = hash.digest('hex');
-        console.log(line);
-        
-        if(dataSize >= 100 && checkACL(line)) {
-            grantAccess();
-        } else if (dataSize < 100) {
-            logAttempt('less than 100 bytes: ' + dataSize + ' bytes');
-        } else {
-            logAttempt(line);
-        }
-        line = '';
-        dataSize = 0;
-        hash = makeHash();
-    }    
 });
-
+var lineBuffer = '';
+dev.on('char', function(char) {
+    lineBuffer += char;
+    if(char == '\n') {
+        dev.emit('line', lineBuffer);
+        lineBuffer = '';
+    }
+});
+dev.on('line', function(line) {
+    var fields = magParse(line);
+    if(!fields) {
+        console.log("Ignored unreadable card");
+        return;
+    }    
+    fields = fields.join('');
+    hash.update(fields);
+    var code = hash.digest('hex');
+    if(checkACL(code) || checkACL(code_oldstyle)) {
+        grantAccess();
+    } else {
+        logAttempt(code);
+    }
+    hash = makeHash();
+});
 dev.on('error', function(err) {
     console.log('MAGSTRIPE ERROR', err)
     process.exit(1);
