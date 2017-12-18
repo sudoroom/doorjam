@@ -216,6 +216,7 @@ var hash = makeHash();
 var hash_oldstyle = makeHash();
 var code_oldstyle = '';
 dev.on('data', function(data) {
+    console.log("got data")
     hash_oldstyle.update(data);
     code_oldstyle = hash_oldstyle.digest('hex');
     var str = scancodeDecode(data);
@@ -243,6 +244,8 @@ dev.on('line', function(line) {
     fields = fields.join('');
     hash.update(fields);
     var code = hash.digest('hex');
+    console.log("code old: " + code_oldstyle);
+    console.log("code new: " + code);
     if(checkACL(code) || checkACL(code_oldstyle)) {
         grantAccess();
     } else {
