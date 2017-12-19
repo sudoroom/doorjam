@@ -224,20 +224,7 @@ var hash_oldstyle = makeHash();
 var dataSize = 0
 dev.on('data', function(data) {
 
-    var olddata = data
-
-    // new style scan decoding
-    var newstr = scancodeDecode(data);
-    console.log("got new data: " + newstr)
-    if(newstr) {
-        var i;
-        for(i=0; i < newstr.length; i++) {
-            dev.emit('char', newstr[i]);
-        }
-    }
-
     // old style scan decoding (to accept old hashes)
-    data = olddata
     if (state == 'init') return
     var i
     var zero = true
@@ -247,28 +234,33 @@ dev.on('data', function(data) {
         }
     }
     if (zero) return
-    console.log("got old data: " + data)
     dataSize += data.length
     hash_oldstyle.update(data)
     if (data[2] == 0x28) {
         var line = hash_oldstyle.digest('hex')
-        console.log("code old: " + line)
         if (dataSize >= 100) CheckCode(line)
         dataSize = 0
         hash_oldstyle = makeHash()
+    }
+
+    // new style scan decoding
+    var newstr = scancodeDecode(data);
+    if(newstr) {
+        var i;
+        for(i=0; i < newstr.length; i++) {
+            dev.emit('char', newstr[i]);
+        }
     }
 });
 var lineBuffer = '';
 dev.on('char', function(char) {
     lineBuffer += char;
-    console.log('got char: '+char)
     if(char == '\n') {
         dev.emit('line', lineBuffer);
         lineBuffer = '';
     }
 });
 dev.on('line', function(line) {
-    console.log('got line: '+line)
     var fields = magParse(line);
     if(!fields) {
         console.log("Ignored unreadable card");
@@ -277,7 +269,6 @@ dev.on('line', function(line) {
     fields = fields.join('');
     hash.update(fields);
     var code = hash.digest('hex');
-    console.log("code new: " + code);
     CheckCode(code)
     hash = makeHash();
 });
