@@ -16,7 +16,7 @@ If the card is not recognized then its hash is logged in the failed_attempts fil
 
 Swipe a new card and run the grant_access_to_last_failed_attempt.js script to grant people access.
 
-*Warning: If the last failed swipe was improperly registered, then you could potentially be granting access to one of several common error codes, rendering the system insecure.*
+*Warning: If the last failed swipe was improperly registered, then you could potentially be granting access to one of several common error codes, rendering the system insecure. See the bottom of this README for common magstripe error code hashes to blacklist.*
 
 People seeking access can also swipe their own cards (at least 3x) and fill out the form at https://omnicommons.org/keys/
 
@@ -81,6 +81,7 @@ PS1='${debian_chroot:+($debian_chroot)}\u@\h`if grep "ec2c7555affb / ext4 rw" /p
 GPLv3+
 
 Copyright 2014 Marc Juul
+
 blacklist the following hashes (magstripe error codes):
 b8548d912086cc19f0f4633a4307af3c35b6ea81
 dd51c7f8b6b1c7b478217b10cb228a0d1d5fb310
