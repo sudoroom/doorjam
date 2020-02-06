@@ -10,7 +10,7 @@ var split = require('split2');
 var through = require('through2');
 var strftime = require('strftime');
 
-var settings = require('settings.js');
+var settings = require('./settings.js');
 
 if(!fs.existsSync(settings.failedAttemptsFilePath)) {
   console.log("It appears that there have been no failed attempts (the "+settings.failedAttemptsFilePath+" file doesn't exist)");

@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 var fs = require('fs');
+var path = require('path');
 var crypto = require('crypto');
 var HID = require('node-hid');
 //var nfc = require('nfc').nfc;
 var SerialPort = require('serialport');
 var sleep = require('sleep').sleep;
 var randomstring = require('randomstring');
-var through=require('through2');
+var through = require('through2');
 
 var argv = require('minimist')(process.argv.slice(2), {
   boolean: [
@@ -22,6 +23,18 @@ var argv = require('minimist')(process.argv.slice(2), {
 var parseHIDKeyboardPacket = require('../lib/hid_parser/keyboard-parser.js');
 
 var settings = require('../settings.js');
+
+// Fix relative file paths
+if(settings.accessControlListFilePath[0] !== '/') {
+  settings.accessControlListFilePath = path.join(__dirname, '..', settings.accessControlListFilePath);
+}
+if(settings.failedAttemptsFilePath[0] !== '/') {
+  settings.failedAttemptsFilePath = path.join(__dirname, '..', settings.failedAttemptsFilePath);
+}
+if(settings.saltFilePath[0] !== '/') {
+  settings.saltFilePath = path.join(__dirname, '..', settings.saltFilePath);
+}
+
 
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
@@ -85,7 +98,11 @@ function findMagStripeReader() {
   return null;
 }
 
-function checkACL(inputline) {
+function addToACL(hash) {
+  console.log("TODO addToACL not yet implemented");
+}
+
+function checkACL(hash) {
 
   if(!fs.existsSync(settings.accessControlListFilePath)) {
     fs.writeFileSync(settings.accessControlListFilePath, "# Acces control list for DoorJam\n");
@@ -100,11 +117,11 @@ function checkACL(inputline) {
     if((line.length <= minLength) || (line.length < 2)) {
       continue; // skip lines that are too short (includes empty lines)
     }
-    if(line[0] == '#') {
-      prevComment = line;
+    if(line[0] === '#') {
+      prevComment = acl[i];
       continue; // skip comments 
     }
-    if(line == inputline) {
+    if(line === hash) {
       console.log("Access granted to: " +prevComment);
       return true;
     }
@@ -113,11 +130,14 @@ function checkACL(inputline) {
 }
 
 function logAttempt(line) {
-  console.log("Access denied. Your attempt has been logged.");
+  console.log("Access denied. Your attempt has been logged. " + new Date());
+  if(arduino) {
+    arduino.write("s"); // make the speaker make a sad sound :(
+  }
 
   fs.appendFileSync(settings.failedAttemptsFilePath, JSON.stringify({
-    code: line,
-    date: new Date()
+    date: (new Date()).toString(),
+    code: line
   })+"\n", {encoding: 'utf8'});
 }
 
@@ -168,7 +188,9 @@ function magParse(line) {
     if(!fields[i]) {
       continue;
     }
-    if((fields.length > 0) && (fields[i].toUpperCase() == 'E')) {
+    // If a track can't be read, according to the MagTek documentation
+    // the field will contain an 'E'
+    if((fields.length > 0) && (fields[i] == 'E')) {
       return null;
     }
     empty = false;
@@ -225,11 +247,11 @@ function debugMagstripeFields(fields) {
 }
 
 // return a 'sudo room v1' hash
-function formatHashSudoV1(hash) {
+function formatHashV1(hash) {
   return '|1|' + hash.digest('hex');
 }
 
-function gotLineFromMagstripeScan(line) {
+function hashV1FromMagstripeLine(line) {
   debug("MagStripe line received:", line);
   var fields = magParse(line);
   if(!fields) {
@@ -237,7 +259,6 @@ function gotLineFromMagstripeScan(line) {
     return;
   }
   debugMagstripeFields(fields);
-
 
   var hash = makeHash();
 
@@ -247,17 +268,12 @@ function gotLineFromMagstripeScan(line) {
     hash.update(fields[i]);
   }
 
-  var code = formatHashSudoV1(hash);
-  debug("Calculated sudo room v1 hash:", code);
-  
-  if(checkACL(code)) {
-    grantAccess();
-  } else {
-    logAttempt(code);
-  }
+  var code = formatHashV1(hash);
+
+  return code;
 }
 
-function init_magstripe() {
+function init_magstripe(cb) {
 
   var remain = Buffer.alloc(0);
   var remainTime = Date.now();
@@ -273,9 +289,18 @@ function init_magstripe() {
   });
 
   var line = '';
-  var str, ch, packet, newlinePos;
+  var str, ch, packet, newlinePos, dat;
+  if(settings.allowV0Hash) {
+    var rawDataBytes = 0;
+    var hashV0 = makeHash();
+    var hashV0Str;
+  }
   magdev.on('data', function(data) {
-
+    if(state === 'init') {
+      return; // flush data during init period (as it may be junk)
+    }
+    dat = data;
+    
     // Pre-pend remaining bytes from last run
     // but only if less than 0.25 seconds have passed
     // since last data arrived
@@ -302,25 +327,43 @@ function init_magstripe() {
       remain = data;
     }
     line += str;
+
+    if(settings.allowV0Hash) {
+      // ignore codes that consist of all zeroes
+      var i;
+      var zero = true;
+      for(i=0; i < dat.length; i++) {
+        if(dat[i] != 0) {
+          zero = false;
+        }
+      }
+      if(!zero) {
+        hashV0.update(dat);
+        rawDataBytes += dat.length
+      }
+    }
+    
+    // Encountered a newline
     newlinePos = line.indexOf('\n');
     if(newlinePos >= 0) {
-      gotLineFromMagstripeScan(line.slice(0, newlinePos));
+
+      // Calculate the V0 hash?
+      if(settings.allowV0Hash) {
+        if(rawDataBytes >= 100) {
+          hashV0Str = hashV0.digest('hex');
+        } else {
+          hashV0Str = null;
+        }
+      
+        rawDataBytes = 0;
+        hashV0 = makeHash();
+      }
+      
+      cb(null, hashV1FromMagstripeLine(line.slice(0, newlinePos)), hashV0Str);
       line = line.slice(newlinePos + 1);
     }
   });
-
-  var lineBuffer = '';
-
-  magdev.on('char', function(ch) {
-    lineBuffer += ch;
-    console.log("char:", ch.charCode);
-    if(char == '\n') {
-      magdev.emit('line', lineBuffer);
-      lineBuffer = '';
-    }
-  });
-
-
+  
   return magdev;
 }
 
@@ -539,7 +582,25 @@ init_arduino(function(err, ard) {
 
   if(!argv['disable-magstripe']) {
     console.log("Initializing magstripe reader");
-    magdev = init_magstripe();
+    
+    magdev = init_magstripe(function(err, hashV1, hashV0) {
+
+      debug("Calculated hash(es):");
+      debug("  v1 hash:", hashV1);
+      if(hashV0) {
+        debug("  v0 hash:", hashV0);
+      }
+      
+      if(checkACL(hashV1)) {
+        grantAccess();
+      } else if(settings.allowV0Hash && hashV0 && checkACL(hashV0)) {
+        grantAccess();
+        addToACL(hashV1);
+      } else {
+        logAttempt(hashV1);
+      }
+    });
+    
     if(!magdev) {
       console.error("Magstripe initialization failed");
       process.exit(1);
@@ -547,8 +608,9 @@ init_arduino(function(err, ard) {
     
   }
 
+  /*
   if(!argv['disable-rfid']) {
-    /*
+
       console.log("Initializing RFID reader");
 
       init_nfc(function(err, dev) {
@@ -561,9 +623,9 @@ init_arduino(function(err, ard) {
 
       setTimeout(init_done, initPeriod);
       });  
-    */     
-  } else {
-    setTimeout(init_done, initPeriod);
-  }        
+  }
+  */
+
+  setTimeout(init_done, initPeriod);
 
 });

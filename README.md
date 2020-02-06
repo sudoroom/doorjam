@@ -93,3 +93,13 @@ PS1='${debian_chroot:+($debian_chroot)}\u@\h`if grep "ec2c7555affb / ext4 rw" /p
 # License and copyright
 
 Most code is GPLv3+ and copyright 2014 Marc Juul + other contributors (see commit log). However, the files in `lib/hid_parser/` have their own license and copyright notices at the top of each file.
+
+# ToDo
+
+The third to last scancode in failed scans seems to be:
+
+```
+  <Buffer 02 00 08 00 00 00 00 00>
+```
+
+But we need to verify that. I think that code is for an ampersand (&).

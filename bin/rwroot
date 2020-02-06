@@ -1,0 +1,27 @@
+#!/bin/sh
+if [ "$#" -ne 0 ]; then
+	mount -o remount,rw /
+	$@
+	roroot
+	exit
+fi
+if grep "ec2c7555affb / ext4 rw" /proc/mounts > /dev/null; then
+	echo FILESYSTEM IS ALREDY READ-WRITE
+	echo YOU MUST RUN roroot WHEN FINISHED TO SET FILESYSTEM BACK TO READ-ONLY
+	exit
+fi
+echo ''
+echo THIS SCRIPT IS FOR SETTING FILESYSTEM TO READ-WRITE
+echo ''
+echo YOU MUST RUN roroot WHEN FINISHED TO SET FILESYSTEM BACK TO READ-ONLY
+echo ''
+echo YOU CAN USE rwroot LIKE sudo TO DO INDIVIDUAL COMMANDS
+echo LIKE # rwroot vim /etc/motd
+echo ''
+echo TO EDIT DOOR ACCESS FILE WITH vim PRESS CONTROL-C AND RUN editaccess
+echo OR TO PROCEED WITH READ/WRITE SHELL, PRESS ENTER
+read sldkjf
+echo SETTING FILESYSTEM TO READ-WRITE
+echo ''
+echo YOU MUST RUN roroot WHEN FINISHED TO SET FILESYSTEM BACK TO READ-ONLY
+mount -o remount,rw /

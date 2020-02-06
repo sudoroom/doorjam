@@ -7,5 +7,5 @@ module.exports = {
   accessControlListFilePath: 'access_control_list',
   failedAttemptsFilePath: '/var_rw/failed_attempts',
   saltFilePath: 'SALT',
-  useRWRoot: true // use rwroot / roroot commands when granting access
-};
+  useRWRoot: true, // use rwroot / roroot commands when granting access
+  allowV0Hash: true // allow use of old style v0 hash};
