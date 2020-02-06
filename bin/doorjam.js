@@ -256,7 +256,7 @@ function hashV1FromMagstripeLine(line) {
   var fields = magParse(line);
   if(!fields) {
     console.log("Ignored unreadable card");
-    return;
+    return null;
   }
   debugMagstripeFields(fields);
 
@@ -273,6 +273,10 @@ function hashV1FromMagstripeLine(line) {
   return code;
 }
 
+// Callback is called every time a valid card is swiped
+// First callback arg is error (if any)
+// Second arg is the v1 hash
+// Third arg is v0 hash if settings.allowV0Hash is true
 function init_magstripe(cb) {
 
   var remain = Buffer.alloc(0);
@@ -358,8 +362,16 @@ function init_magstripe(cb) {
         rawDataBytes = 0;
         hashV0 = makeHash();
       }
+
+      var hashV1Str = hashV1FromMagstripeLine(line.slice(0, newlinePos));
       
-      cb(null, hashV1FromMagstripeLine(line.slice(0, newlinePos)), hashV0Str);
+      // Since the v1 hash will return null on errors
+      // and is much better at detecting errors
+      // we don't call the callback at all if we don't have a v1 hash
+      // even though we might still have a v0 hash
+      if(hashV1Str) {
+        cb(null, hashV1Str, hashV0Str);
+      }
       line = line.slice(newlinePos + 1);
     }
   });
@@ -567,6 +579,9 @@ if(argv['fake-arduino']) {
 } else {
   init_arduino = init_arduino_real;
 }
+
+// allow granting access from outside the process
+process.on('SIGUSR2', grantAccess);
 
 console.log("Initializing");
 
