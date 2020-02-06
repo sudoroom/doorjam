@@ -8,5 +8,6 @@ module.exports = {
   failedAttemptsFilePath: 'failed_attempts',
   saltFilePath: 'SALT',
   useRWRoot: false, // use rwroot / roroot commands when granting access
-  allowV0Hash: true // allow use of old style v0 hash
+  allowV0Hash: true, // allow use of old style v0 hash
+  minCardDataBytes: 8 // If a card has fewer that this number bytes total, across all three tracks, discounting track delimiters and error data, then the card is ignored
 };

@@ -277,12 +277,17 @@ function hashV1FromMagstripeLine(line) {
 
   var hash = makeHash();
 
+  var len = 0;
   var i;
   for(i=0; i < fields.length; i++) {
     if(!fields[i]) continue;
     hash.update(fields[i]);
+    len += fields[i].length;
   }
 
+  if(len < settings.minCardDataBytes) {
+    return null;
+  }
   var code = formatHashV1(hash);
 
   return code;
