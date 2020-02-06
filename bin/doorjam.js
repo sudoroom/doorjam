@@ -4,13 +4,23 @@ var fs = require('fs');
 var HID = require('node-hid');
 //var nfc = require('nfc').nfc;
 var crypto = require('crypto');
-var SerialPort = require('serialport').SerialPort;
+var SerialPort = require('serialport');
 var sleep = require('sleep').sleep;
 var randomstring = require('randomstring');
+var through=require('through2');
+// TODO string_decoder unused?
 var StringDecoder = require('string_decoder').StringDecoder;
-var argv = require('minimist')(process.argv.slice(2));
+var argv = require('minimist')(process.argv.slice(2), {
+  boolean: [
+    'h',
+    'help',
+    'debug',
+    'disable-magstripe',
+    'fake-arduino'
+  ]
+});
 
-var scancodeDecode = require('../lib/scancode_decode.js');
+var parseHIDKeyboardPacket = require('../lib/hid_parser/keyboard-parser.js');
 
 var settings = require('../settings.js');
 
@@ -63,6 +73,7 @@ function findMagStripeReader() {
       } catch(e) {
         console.error("Failed to initialize magstripe reader");
         console.error("Hint: You may need to be root");
+        console.error(e);
         return null;
       }
       return dev;
@@ -123,7 +134,8 @@ function makeHash() {
   return hash;
 }
 
-// parse a magcard line
+// Parse a magcard line
+// Refer to USB KB SureSwipe Reader Technical Reference Manual
 // return an array of three strings (one for each track)
 //   strings are empty if track didn't exist or had no data
 // returns null if all tracks are empty or there was an error reading any track
@@ -169,9 +181,87 @@ function magParse(line) {
   return fields;
 }
 
+function parseHIDDataToChar(packet) {
+  packet = parseHIDKeyboardPacket(packet);
+  var charCodes = [];
+  var i;
+  for(i=0; i < packet.charCodes.length; i++) {
+    if(packet.charCodes[i]) charCodes.push(packet.charCodes[i]);
+  }
+  if(packet.errorState) {
+    throw new Error("Packet rollover error (user pressed too many keys on keyboard)");
+  }
+  if(charCodes.length > 1) {
+    throw new Error("Somehow the magnetic card reader sent the equivalent signal of a the user pressing two (non-modifier) keys at once. There is no way to know the order of these characters: " + packet.charCodes.join(', '));
+  }
+  if(charCodes.length < 1) {
+    return '';
+  }
+  return charCodes[0];
+}
+
+function debug() {
+  if(!argv.debug) return;
+  if(!arguments.length) return;
+
+  // prepend '[debug]' to output
+  const args = Array.prototype.slice.apply(arguments);
+  ['[debug]'].concat(args)
+  
+  console.log.apply(this, args);
+}
+
+function debugMagstripeFields(fields) {
+  if(!argv.debug) return;
+
+  var i;
+  for(i=0; i < 3; i++) {
+    if(!fields[i]) {
+      debug("MagStripe field "+(i+1)+": <empty>");
+    } else {
+      debug("MagStripe field "+(i+1)+":", fields[i]);
+    }
+  }
+  
+}
+
+// return a 'sudo room v1' hash
+function formatHashSudoV1(hash) {
+  return '|1|' + hash.digest('hex');
+}
+
+function gotLineFromMagstripeScan(line) {
+  debug("MagStripe line received:", line);
+  var fields = magParse(line);
+  if(!fields) {
+    console.log("Ignored unreadable card");
+    return;
+  }
+  debugMagstripeFields(fields);
+
+
+  var hash = makeHash();
+
+  var i;
+  for(i=0; i < fields.length; i++) {
+    if(!fields[i]) continue;
+    hash.update(fields[i]);
+  }
+
+  var code = formatHashSudoV1(hash);
+  debug("Calculated sudo room v1 hash:", code);
+  
+  if(checkACL(code)) {
+    grantAccess();
+  } else {
+    logAttempt(code);
+  }
+}
+
 function init_magstripe() {
 
-  var decoder = new StringDecoder('utf8');
+  var remain = Buffer.alloc(0);
+  var remainTime = Date.now();
   var magdev = findMagStripeReader();
   if(!magdev) {
     console.error("Magstripe reader not found.");
@@ -183,49 +273,55 @@ function init_magstripe() {
     process.exit(1);
   });
 
+  var line = '';
+  var str, ch, packet, newlinePos;
   magdev.on('data', function(data) {
-    
-    var str = scancodeDecode(data);
-    if(str) {
-      var i;
-      for(i=0; i < str.length; i++) {
-        magdev.emit('char', str[i]);
+
+    // Pre-pend remaining bytes from last run
+    // but only if less than 0.25 seconds have passed
+    // since last data arrived
+    if(remain.length && (Date.now() - remainTime) < 250) {
+      data = Buffer.concat([remain, data]);
+    }
+    remain = Buffer.alloc(0);
+
+    str = '';
+    while(data.length >= 8) {
+      packet = data.slice(0, 8);
+      data = data.slice(8);
+      try {
+        ch = '';
+        ch = parseHIDDataToChar(packet);
+      } catch(e) {
+        magdev.emit('error', e);
       }
+      if(ch) {
+        str += ch;
+      }
+    }
+    if(data.length) {
+      remain = data;
+    }
+    line += str;
+    newlinePos = line.indexOf('\n');
+    if(newlinePos >= 0) {
+      gotLineFromMagstripeScan(line.slice(0, newlinePos));
+      line = line.slice(newlinePos + 1);
     }
   });
 
   var lineBuffer = '';
 
-  magdev.on('char', function(char) {
-    lineBuffer += char;
-    
+  magdev.on('char', function(ch) {
+    lineBuffer += ch;
+    console.log("char:", ch.charCode);
     if(char == '\n') {
       magdev.emit('line', lineBuffer);
       lineBuffer = '';
     }
   });
 
-  magdev.on('line', function(line) {
-    var fields = magParse(line);
-    if(!fields) {
-      console.log("Ignored unreadable card");
-      return;
-    }
-    
-    fields = fields.join('');
 
-    hash.update(fields);
-
-    var code = hash.digest('hex');
-
-    if(checkACL(code)) {
-      grantAccess();
-    } else {
-      logAttempt(code);
-    }
-
-    hash = makeHash();
-  });
   return magdev;
 }
 
@@ -308,29 +404,35 @@ function init_salt() {
 function init_arduino_real(callback) {
 
   var serial = new SerialPort(settings.arduinoDevice, {
-    baudrate: 9600,
-    databits: 8,
-    stopbits: 1,
+    baudRate: 9600,
+    dataBits: 8,
+    stopBits: 1,
     parity: 'none',
-    openImmediately: false
+    autoOpen: false
+  });
+
+  var lineReader = new SerialPort.parsers.Readline({
+    delimiter: '\n'
   });
   
-  serial.pipe(split()).pipe(through(function(data,encoding,next) {
-    if(/^voltage/.test(data)) { // if the arduino will tell us voltage
-      health.voltage = parseFloat(data.toString().split(/\s+/)[1])
-      if(!isNaN(health.voltage)) {
-        health.lastVoltage = Date.now()
-        console.log('voltage is ',health.voltage);
-      } else {
-        console.log('WTF arduino sent ^voltage and then NaN');
+  // Use the line parser to get a stream of lines
+  serial.pipe(lineReader)
+    .pipe(through(function(data, encoding, next) {
+      if(/^voltage/.test(data)) { // if the arduino will tell us voltage
+        health.voltage = parseFloat(data.toString().split(/\s+/)[1])
+        if(!isNaN(health.voltage)) {
+          health.lastVoltage = Date.now()
+          console.log('voltage is ',health.voltage);
+        } else {
+          console.log('WTF arduino sent ^voltage and then NaN');
+        }
+      } else if(/opening/.test(data)) {
+        health.lastMotor = Date.now();
+      } else if(/closing/.test(data)) {
+        health.lastMotor = Date.now();
       }
-    } else if(/opening/.test(data)) {
-      health.lastMotor = Date.now();
-    } else if(/closing/.test(data)) {
-      health.lastMotor = Date.now();
-    }
-    next();
-  }));
+      next();
+    }));
   
   function batteryRequest() {
     serial.write("b"); // tell arduino to tell us the battery voltage
@@ -361,7 +463,8 @@ function init_arduino_real(callback) {
     console.log("Lost serial connection. Exiting");
     process.exit(1);
   });
-  
+
+  serial.open();
 }
 
 function init_arduino_fake(callback) {
@@ -401,6 +504,7 @@ function usage(f) {
   f.write("       --fake-arduino : Pretend an arduino is connected\n");
   //    f.write("       --disable-rfid : Disable RFID (NFC) functionality\n");
   f.write("  --disable-magstripe : Disable magstripe functionality\n");
+  f.write("              --debug : Enable debug output");
   f.write("                   -h : This help screen\n");
   f.write("\n");
 }
@@ -413,7 +517,6 @@ if(argv.h || argv.help) {
 }
 
 salt = init_salt();
-hash = makeHash();
 
 var init_arduino;
 

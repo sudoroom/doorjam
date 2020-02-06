@@ -1,4 +1,4 @@
-DoorJam is the meatspace firewall for sudo room
+DoorJam is the meatspace firewall for Omni Commons.
 
 # Prerequisites
 
@@ -8,9 +8,13 @@ sudo apt install build-essential libusb-1.0-0-dev libnfc-bin libnfc-dev
 npm install
 ```
 
+# Hardware
+
+This only works with `Magtek USB KB SureSwipe` readers. Be aware that a different type `Magtek USB HID SureSwipe` also exists. This one does _not_ act as a keyboard device and would require us to write custom USB HID parsing code for that specific type of reader.
+
 # Usage
 
-Users swipe their access card in a Magtek USB magnetic swipe card reader and if the hash of their card data matches a hash in the access control file then a character is sent over serial to an arduino that then closes a relay for a number of seconds to open the door.
+Users swipe their access card in a Magtek USB KB magnetic swipe card reader and if the hash of their card data matches a hash in the access control file then a character is sent over serial to an arduino that then closes a relay for a number of seconds to open the door.
 
 If the card is not recognized then its hash is logged in the failed_attempts file with the date and time of the attempt.
 
