@@ -52,10 +52,4 @@ You can also use the sudo_grant_access.sh script, but you should edit it to suit
 
 # License and copyright
 
-GPLv3+
-
-Copyright 2014 Marc Juul
-
-# Known bugs
-
-If the program is killed (or dies) then the program will stall on next startup until an rfid chip is scanned. This is because of this problem: https://github.com/camme/node-nfc/issues/9
+Most code is GPLv3+ and copyright 2014 Marc Juul + other contributors (see commit log). However, the files in `lib/hid_parser/` have their own license and copyright notices at the top of each file.
