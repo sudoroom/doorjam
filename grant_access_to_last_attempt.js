@@ -5,13 +5,15 @@
 */
 
 var fs = require('fs');
-var spawn = require('child_process').spawn;
+var spawnSync = require('child_process').spawnSync;
 var split = require('split2');
 var through = require('through2');
 var strftime = require('strftime');
 
-if(!fs.existsSync('/var_rw/failed_attempts')) {
-    console.log("It appears that there have been no failed attempts (the /var_rw/failed_attempts file doesn't exist)");
+var settings = require('settings.js');
+
+if(!fs.existsSync(settings.failedAttemptsFilePath)) {
+    console.log("It appears that there have been no failed attempts (the "+settings.failedAttemptsFilePath+" file doesn't exist)");
     process.exit(1);
 }
 
@@ -20,7 +22,7 @@ if(process.argv.length < 3) {
     process.exit(1);
 }
 
-var attempts = fs.readFileSync('/var_rw/failed_attempts', {encoding: 'utf8'}).split("\n");
+var attempts = fs.readFileSync(settings.failedAttemptsFilePath, {encoding: 'utf8'}).split("\n");
 var i, lastAttempt;
 for(i=attempts.length-1; i >= 0; i--) {
     lastAttempt = attempts[i];
@@ -76,11 +78,15 @@ function addUser (answers) {
     var entry = comment + lastAttempt.code + "\n";
 
     try {
-        spawn('/bin/mount',[ '-o','remount,rw','/' ])
-          .stdout.on('end', function(){
-            fs.appendFileSync(__dirname + '/access_control_list', entry);
-            spawn('/usr/local/bin/roroot');
-          })
+      if(settings.useRWRoot) {
+          spawnSync('/bin/mount',[ '-o','remount,rw','/' ])
+      }
+      
+      fs.appendFileSync(settings.accessControlListFilePath, entry);
+      
+      if(settings.useRWRoot) {      
+          spawnSync('/usr/local/bin/roroot');
+      }
     } catch(e) {
         console.log("Error: Hm. Are you sure you have permission to write to the access_control_list file?")
         process.exit(1);

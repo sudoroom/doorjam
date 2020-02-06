@@ -6,5 +6,6 @@ module.exports = {
   watchdogDevice: '/dev/watchdog', // Used by watchdog command
   accessControlListFilePath: 'access_control_list',
   failedAttemptsFilePath: 'failed_attempts',
-  saltFilePath: 'SALT'
+  saltFilePath: 'SALT',
+  useRWRoot: false // use rwroot / roroot commands when granting access
 };
