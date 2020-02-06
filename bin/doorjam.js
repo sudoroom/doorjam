@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 
 var fs = require('fs');
+var crypto = require('crypto');
 var HID = require('node-hid');
 //var nfc = require('nfc').nfc;
-var crypto = require('crypto');
 var SerialPort = require('serialport');
 var sleep = require('sleep').sleep;
 var randomstring = require('randomstring');
 var through=require('through2');
-// TODO string_decoder unused?
-var StringDecoder = require('string_decoder').StringDecoder;
+
 var argv = require('minimist')(process.argv.slice(2), {
   boolean: [
     'h',
