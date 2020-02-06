@@ -88,11 +88,11 @@ function findMagStripeReader() {
 
 function checkACL(inputline) {
 
-  if(!fs.existsSync('access_control_list')) {
-    fs.writeFileSync('access_control_list', "# Acces control list for DoorJam\n");
-    fs.chmodSync('access_control_list', '600');
+  if(!fs.existsSync(settings.accessControlListFilePath)) {
+    fs.writeFileSync(settings.accessControlListFilePath, "# Acces control list for DoorJam\n");
+    fs.chmodSync(settings.accessControlListFilePath, '600');
   }
-  var acl = fs.readFileSync('access_control_list', {encoding: 'utf8'}).split("\n");
+  var acl = fs.readFileSync(settings.accessControlListFilePath, {encoding: 'utf8'}).split("\n");
 
   var i, line, prevComment;
   for(i=0; i < acl.length; i++) {
@@ -116,7 +116,7 @@ function checkACL(inputline) {
 function logAttempt(line) {
   console.log("Access denied. Your attempt has been logged.");
 
-  fs.appendFileSync('failed_attempts', JSON.stringify({
+  fs.appendFileSync(settings.failedAttemptsFilePath, JSON.stringify({
     code: line,
     date: new Date()
   })+"\n", {encoding: 'utf8'});
@@ -384,7 +384,7 @@ function init_magstripe() {
 
 function init_salt() {
   var salt;
-  if(!fs.existsSync('SALT')) {
+  if(!fs.existsSync(settings.saltFilePath)) {
     console.log("=========== WARNING ===========");
     console.log("  The SALT file did not exist  ");
     console.log("  a new one will be generated  ");
@@ -393,9 +393,9 @@ function init_salt() {
     console.log("   then it will stop working   ");
     
     salt = randomstring.generate(128);
-    fs.writeFileSync('SALT', salt);
+    fs.writeFileSync(settings.saltFilePath, salt);
   } else {
-    salt = fs.readFileSync('SALT');
+    salt = fs.readFileSync(settings.saltFilePath);
   }
   return salt;
 }
@@ -404,7 +404,7 @@ function init_salt() {
 function init_arduino_real(callback) {
 
   var serial = new SerialPort(settings.arduinoDevice, {
-    baudRate: 9600,
+    baudRate: settings.arduniBaudRate || 9600,
     dataBits: 8,
     stopBits: 1,
     parity: 'none',
