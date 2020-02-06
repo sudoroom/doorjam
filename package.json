@@ -20,10 +20,9 @@
   },
   "dependencies": {
     "minimist": "^1.1.0",
-    "nfc": "git://github.com/juul/node-nfc#master",
-    "node-hid": "~0.3.1",
+    "node-hid": "^1.1.0",
     "randomstring": "~1.0.3",
-    "serialport": "~1.4.0",
+    "serialport": "^8.0.7",
     "sleep": "~1.1.8",
     "split2": "^0.2.1",
     "through2": "^0.6.5"

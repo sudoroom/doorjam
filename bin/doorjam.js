@@ -2,7 +2,7 @@
 
 var fs = require('fs');
 var HID = require('node-hid');
-var nfc = require('nfc').nfc;
+//var nfc = require('nfc').nfc;
 var crypto = require('crypto');
 var SerialPort = require('serialport').SerialPort;
 var sleep = require('sleep').sleep;
@@ -21,7 +21,7 @@ var state = 'init'; // The current state of this program. Will change to 'runnin
 var salt = null;
 var hash = null;
 var arduino = null;
-var nfcdev = null;
+//var nfcdev = null;
 var magdev = null;
 
 var health = { // data from the arduino
@@ -33,11 +33,11 @@ var health = { // data from the arduino
 }
 
 function exitCleanup(exit) {
-    if(nfcdev) {
-        console.log("Stopping NFC device");
-        nfcdev.stop();
-        nfcdev = null;
-    }
+//    if(nfcdev) {
+//        console.log("Stopping NFC device");
+//        nfcdev.stop();
+//        nfcdev = null;
+//    }
     if(exit) {
         console.log("Exiting");
         process.exit(1);
@@ -230,6 +230,7 @@ function init_magstripe() {
 }
 
 
+/*
 function init_nfc(callback) {
 
     var nfcdev = new nfc.NFC();
@@ -283,6 +284,7 @@ function init_nfc(callback) {
     nfcdev.start();
     return callback(null, nfcdev);
 }
+*/
 
 function init_salt() {
     var salt;
@@ -397,7 +399,7 @@ function usage(f) {
     f.write("usage: sudo index.js\n");
     f.write("\n");
     f.write("       --fake-arduino : Pretend an arduino is connected\n");
-    f.write("       --disable-rfid : Disable RFID (NFC) functionality\n");
+//    f.write("       --disable-rfid : Disable RFID (NFC) functionality\n");
     f.write("  --disable-magstripe : Disable magstripe functionality\n");
     f.write("                   -h : This help screen\n");
     f.write("\n");
@@ -443,8 +445,10 @@ init_arduino(function(err, ard) {
         
     }
 
-    if(!argv['disable-rfid']) {
-        console.log("Initializing RFID reader");
+  if(!argv['disable-rfid']) {
+    /*
+      console.log("Initializing RFID reader");
+
         init_nfc(function(err, dev) {
             nfcdev = dev;
             if(err) {
@@ -454,7 +458,8 @@ init_arduino(function(err, ard) {
             console.log("NFC device initialized");
 
             setTimeout(init_done, initPeriod);
-        });       
+        });  
+*/     
     } else {
         setTimeout(init_done, initPeriod);
     }        
