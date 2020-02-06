@@ -8,7 +8,11 @@ var HID = require('node-hid');
 var SerialPort = require('serialport');
 var sleep = require('sleep').sleep;
 var randomstring = require('randomstring');
+var strftime = require('strftime');
 var through = require('through2');
+
+// add user to access control list
+var addUser = require('../lib/add_user.js');
 
 var argv = require('minimist')(process.argv.slice(2), {
   boolean: [
@@ -98,8 +102,19 @@ function findMagStripeReader() {
   return null;
 }
 
-function addToACL(hash) {
-  console.log("TODO addToACL not yet implemented");
+function addToACL(comment, hash) {
+  if(!comment || comment[0] !== '#') {
+    console.error("Malformed comment while attempting to upgrade old v0 hash");
+    return;
+  }
+  if(!hash) {
+    console.error("Missing hash while attempting to upgrade old v0 hash");
+    return
+  }
+  comment = comment + ' | auto-upraded to v1 hash on ' + strftime('%FT%T')
+  
+  console.log("Adding new v1 hash for user:", comment);
+  addUser(comment, hash, settings);
 }
 
 function checkACL(hash) {
@@ -123,7 +138,7 @@ function checkACL(hash) {
     }
     if(line === hash) {
       console.log("Access granted to: " +prevComment);
-      return true;
+      return (prevComment || "# Unknown user");
     }
   }
   return false;
@@ -226,8 +241,8 @@ function debug() {
   if(!arguments.length) return;
 
   // prepend '[debug]' to output
-  const args = Array.prototype.slice.apply(arguments);
-  ['[debug]'].concat(args)
+  var args = Array.prototype.slice.apply(arguments);
+  args = ['[debug]'].concat(args)
   
   console.log.apply(this, args);
 }
@@ -608,11 +623,17 @@ init_arduino(function(err, ard) {
       
       if(checkACL(hashV1)) {
         grantAccess();
-      } else if(settings.allowV0Hash && hashV0 && checkACL(hashV0)) {
-        grantAccess();
-        addToACL(hashV1);
       } else {
-        logAttempt(hashV1);
+        
+        var comment = checkACL(hashV0);
+        if(settings.allowV0Hash && hashV0 && comment) {
+          
+          grantAccess();
+          addToACL(comment, hashV1);
+
+        } else {
+          logAttempt(hashV1);
+        }
       }
     });
     

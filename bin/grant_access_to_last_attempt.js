@@ -5,12 +5,12 @@
 */
 
 var fs = require('fs');
-var spawnSync = require('child_process').spawnSync;
 var split = require('split2');
 var through = require('through2');
 var strftime = require('strftime');
 
-var settings = require('./settings.js');
+var addUser = require('../lib/add_user.js');
+var settings = require('../settings.js');
 
 if(!fs.existsSync(settings.failedAttemptsFilePath)) {
   console.log("It appears that there have been no failed attempts (the "+settings.failedAttemptsFilePath+" file doesn't exist)");
@@ -41,7 +41,7 @@ askPrompts([
   { key: 'contactInfo', msg: 'What is their email and/or phone number?' },
   { key: 'collective', msg: 'Which collective are they a member of?' },
   { key: 'addedBy', msg: 'Who are you, the person granting access?' }
-], addUser);
+], addUserFromAnswers);
 
 function askPrompts (prompts, cb) {
   var current = prompts.shift();
@@ -62,36 +62,27 @@ function askPrompts (prompts, cb) {
   }));
 }
 
-function addUser (answers) {
-  var comment = '# ' + process.argv.slice(2).join(' ') + " | added on " + new Date() + process.env.SSH_CLIENT + process.env.TERM + " user: " + process.env.USER + "\n";
+function addUserFromAnswers(answers) {
   var name = process.argv.slice(2).join(' ')
   var comment = '#ANNOUNCE ' + JSON.stringify(answers.announce) + ' ' + name
       + ' ' + answers.contactInfo
       + ' ' + answers.collective
       + ' | added by ' + answers.addedBy
       + ' (' + process.env.USER
-      + ') on ' + strftime('%FT%T')
-      + '\n';
+      + ') on ' + strftime('%FT%T');
 
   // #ANNOUNCE "gumby" ben bgdaniels@gmail.com / commons wg | added by jake Wed Feb 10 22:29:19 PST 2016
-
-  var entry = comment + lastAttempt.code + "\n";
+  
 
   try {
-    if(settings.useRWRoot) {
-      spawnSync('/bin/mount',[ '-o','remount,rw','/' ])
-    }
-    
-    fs.appendFileSync(settings.accessControlListFilePath, entry);
-    
-    if(settings.useRWRoot) {      
-      spawnSync('/usr/local/bin/roroot');
-    }
-  } catch(e) {
-    console.log("Error: Hm. Are you sure you have permission to write to the access_control_list file?")
+    var entry = addUser(comment, lastAttempt.code, settings);
+  } catch(err) {
+    console.error(err);
+    console.error("Hm. Are you sure you have permission to write to the access_control_list file?")
     process.exit(1);
   }
 
   console.log("Added: \n" + entry);
   process.stdin.destroy();
 }
+
