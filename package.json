@@ -23,7 +23,8 @@
     "randomstring": "~1.0.3",
     "serialport": "~1.4.0",
     "sleep": "~1.1.8",
-    "split2": "^0.2.1",
-    "through2": "^0.6.5"
+    "split2": "~0.2.1",
+    "through2": "^0.6.5",
+    "strftime": "~0.9.2"
   }
 }

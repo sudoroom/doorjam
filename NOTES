@@ -1,0 +1,7 @@
+The third to last scancode in failed scans seems to be:
+
+  <Buffer 02 00 08 00 00 00 00 00>
+
+But I need to verify that. I think that code is for an ampersand (&).
+
+http://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
