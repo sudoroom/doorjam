@@ -55,7 +55,7 @@ serial.pipe(split()).pipe(through(function(data,encoding,next) {
         health.voltage = parseFloat(data.toString().split(/\s+/)[1])
         if(!isNaN(health.voltage)) {
             health.lastVoltage = Date.now()
-            console.log('voltage is ',health.voltage);
+            // console.log('voltage is ',health.voltage);
         } else {
             console.log('WTF arduino sent ^voltage and then NaN');
         }
@@ -150,9 +150,14 @@ function logAttempt(line) {
     })+"\n", {encoding: 'utf8'});
 }
 
-function grantAccess() {
+function grantAccess(line) {
     console.log("Access granted on " + new Date());
     serial.write("o");
+
+    fs.appendFileSync('/var_rw/good_swipe_log', JSON.stringify({
+        date: (new Date()).toString(),
+        code: line.replace(/\n/g," ")
+    })+"\n", {encoding: 'utf8'});
 }
 
 
@@ -197,10 +202,10 @@ dev.on('data', function(data) {
         var line = hash.digest('hex');
         console.log(line);
         
-        if(dataSize >= 100 && checkACL(line)) {
-            grantAccess();
-        } else if (dataSize < 100) {
-            logAttempt('less than 100 bytes: ' + dataSize + ' bytes');
+        if(dataSize >= 75 && checkACL(line)) {
+            grantAccess(line);
+        } else if (dataSize < 75) {
+            logAttempt('less than 75 bytes: ' + dataSize + ' bytes');
         } else {
             logAttempt(line);
         }
@@ -239,4 +244,4 @@ setInterval(function () {
 }, 1000 * 60 * 1); // every 1 minute
 
 // allow granting access from outside the process
-process.on('SIGUSR2', grantAccess);
+process.on('SIGUSR2', grantAccess.bind(null,"sigusr"));
