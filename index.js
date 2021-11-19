@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+var scancodeDecode = require('../scancode_decode.js');
+
 var split=require('split2');
 var through=require('through2');
 
@@ -189,6 +191,7 @@ dev.on('data', function(data) {
         return;
     }
     // console.log(data.toString('hex')); // for debugging to figure out what error codes look like
+    console.log(scancodeDecode(data));
     dataSize += data.length;
     hash.update(data);
     
