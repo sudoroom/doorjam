@@ -188,15 +188,10 @@ dev.on('data', function(data) {
     if(state == 'init') {
         return; // flush data during init period
     }
+    
     // ignore codes that consist of all zeroes
-    var i;
-    var zero = true;
-    for(i=0; i < data.length; i++) {
-        if(data[i] != 0) {
-            zero = false;
-        }
-    }
-    if(zero) {
+    var allZero = data.every(d => d == 0);
+    if(allZero) {
         return;
     }
     // console.log(data.toString('hex')); // for debugging to figure out what error codes look like
