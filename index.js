@@ -113,6 +113,12 @@ function findMagStripeReader() {
     process.exit(1);
 }
 
+function checkErrorCodes(inputLine) {
+    var error_codes = fs.readFileSync('error_codes', {encoding: 'utf8'}).split(" ");
+    return error_codes.includes(inputLine);
+}
+
+
 function checkACL(inputline) {
 
     if(!fs.existsSync('access_control_list')) {
@@ -201,8 +207,9 @@ dev.on('data', function(data) {
     if(data[2] == 0x28) {
         var line = hash.digest('hex');
         console.log(line);
-        
-        if(dataSize >= 75 && checkACL(line)) {
+        if(checkErrorCodes(line)) {
+          logAttempt('error code detected');
+        } else if(dataSize >= 75 && checkACL(line)) {
             grantAccess(line);
         } else if (dataSize < 75) {
             logAttempt('less than 75 bytes: ' + dataSize + ' bytes');
