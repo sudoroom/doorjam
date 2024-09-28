@@ -20,6 +20,9 @@ var initPeriod = 500; // time to stay in init period in ms (when buffer is flush
 var state = 'init'; // The current state of this program. Will change to 'running' after initialization.
 var salt = null;
 
+var lastDoorOpenSent; // time when the last door open command was sent to the arduino
+var lastDoorOpenReceived; // time when the last message was received from the arduino indicating that it opened the door
+
 if(!fs.existsSync('SALT')) {
     console.log("=========== WARNING ===========");
     console.log("  The SALT file did not exist  ");
@@ -60,7 +63,10 @@ serial.pipe(split()).pipe(through(function(data,encoding,next) {
             console.log('WTF arduino sent ^voltage and then NaN');
         }
     }
-    if(/opening/.test(data)) health.lastMotor = Date.now()
+    if(/opening/.test(data)) {
+        health.lastMotor = Date.now();
+        lastDoorOpenReceived = new Date();
+    }
     if(/closing/.test(data)) health.lastMotor = Date.now()
     next()
 }));
@@ -153,7 +159,7 @@ function logAttempt(line) {
 function grantAccess(line) {
     console.log("Access granted on " + new Date());
     serial.write("o");
-
+    lastDoorOpenSent = new Date();
     fs.appendFileSync('/var_rw/good_swipe_log', JSON.stringify({
         date: (new Date()).toString(),
         code: line.replace(/\n/g," ")
@@ -233,10 +239,32 @@ function batteryRequest() {
     serial.write("b") // tell arduino to send us voltage
 }
 
+// Called when it is detected that a door open command
+// sent to the arduino did not result in the arduino
+// reporting back that it opened the door
+function doorDidNotOpen() {
+  // TODO write me
+}
+
 setTimeout(batteryRequest, 1000 * 30); // tell arduino to send us voltage before first health report
 
 setInterval(batteryRequest, 1000 * 60 * 1); // then every 1 minute
 
+// Every 10 seconds
+// check if the arduino reported door open
+// after the last attempted door open commend that was sent to the arduino
+setInterval(function () {
+  if(!lastDoorOpenReceived || !lastDoorOpenSent) {
+    return;
+  }
+  // if there was more than 3 seconds between last
+  // door open request sent and last "i opened the door" message received
+  // to/from the arduino, then call doorDidNotOpen()
+  if(((lastDoorOpenReceived - lastDoorOpenSent) / 1000) > 3) {
+    doorDidNotOpen();
+  }
+}, 10 * 1000); 
+            
 setInterval(function () {
     health.sinceMotor = Date.now() - health.lastMotor
     health.sinceVoltage = Date.now() - health.lastVoltage
