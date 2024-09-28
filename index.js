@@ -262,6 +262,8 @@ setInterval(function () {
   // to/from the arduino, then call doorDidNotOpen()
   if(((lastDoorOpenReceived - lastDoorOpenSent) / 1000) > 3) {
     doorDidNotOpen();
+    lastDoorOpenReceived = undefined;
+    lastDoorOpenSent = undefined;
   }
 }, 10 * 1000); 
             
