@@ -22,6 +22,9 @@ var salt = null;
 
 var lastDoorOpenSent; // time when the last door open command was sent to the arduino
 var lastDoorOpenReceived; // time when the last message was received from the arduino indicating that it opened the door
+var doorSensorGPIO; // byte from /sys/class/gpio/gpio60/value indicating whether door sensor is open or closed
+var lastDoorOpenSensed; // most recent time door was open
+var lastDoorClosedSensed; // last time door state CHANGED to closed
 
 if(!fs.existsSync('SALT')) {
     console.log("=========== WARNING ===========");
@@ -242,13 +245,26 @@ function batteryRequest() {
 // Called when it is detected that a door open command
 // sent to the arduino did not result in the arduino
 // reporting back that it opened the door
-function doorDidNotOpen() {
-  // TODO write me
+function doorOpenRequestIgnored() {
+    console.log("Error: arduino did not respond to door open request");
 }
 
 setTimeout(batteryRequest, 1000 * 30); // tell arduino to send us voltage before first health report
 
 setInterval(batteryRequest, 1000 * 60 * 1); // then every 1 minute
+
+setInterval(function () { // checkDoorOpenSensor
+    if(fs.existsSync('/sys/class/gpio/gpio60/value')) {
+        var previousDoorSensorGPIO = doorSensorGPIO
+        doorSensorGPIO = fs.readFileSync('/sys/class/gpio/gpio60/value')[0] // returns "0\n" if door is open, "1\n" if door closed
+        if(doorSensorGPIO == 48) { // "0"
+            lastDoorOpenSensed = new Date();
+        }
+        if(doorSensorGPIO == 49 && previousDoorSensorGPIO == 48) { // "1"
+            lastDoorClosedSensed = new Date(); // only store when the door CHANGED to closed
+        }
+    }
+}, 1000); // every second
 
 // Every 10 seconds
 // check if the arduino reported door open
@@ -259,9 +275,9 @@ setInterval(function () {
   }
   // if there was more than 3 seconds between last
   // door open request sent and last "i opened the door" message received
-  // to/from the arduino, then call doorDidNotOpen()
+  // to/from the arduino, then call doorOpenRequestIgnored()
   if(((lastDoorOpenReceived - lastDoorOpenSent) / 1000) > 3) {
-    doorDidNotOpen();
+    doorOpenRequestIgnored();
     lastDoorOpenReceived = undefined;
     lastDoorOpenSent = undefined;
   }
@@ -271,7 +287,7 @@ setInterval(function () {
     health.sinceMotor = Date.now() - health.lastMotor
     health.sinceVoltage = Date.now() - health.lastVoltage
     console.log('health',JSON.stringify(health))
-}, 1000 * 60 * 1); // every 1 minute
+}, 1000 * 60 * 10); // every 10 minutes
 
 // allow granting access from outside the process
 process.on('SIGUSR2', grantAccess.bind(null,"sigusr"));
