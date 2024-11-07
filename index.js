@@ -130,15 +130,15 @@ function checkACL(inputline) {
     }
     var acl = fs.readFileSync('access_control_list', {encoding: 'utf8'}).split("\n");
 
-    var i, line, prevCommment;
+    var i, line, prevCommment; // this prevCommment is a type, does that have any effect?
     for(i=0; i < acl.length; i++) {
-        line = acl[i];
-        line = line.replace(/\s+/g, ''); // remove whitespace
+        lineRaw = acl[i];
+        line = lineRaw.replace(/\s+/g, ''); // remove whitespace
         if((line.length <= minLength) || (line.length < 2)) {
             continue; // skip lines that are too short (includes empty lines)
         }
         if(line[0] == '#') {
-            prevComment = line;
+            prevComment = lineRaw;
             continue; // skip comments 
         }
         if(line == inputline) {
