@@ -256,12 +256,16 @@ setInterval(batteryRequest, 1000 * 60 * 1); // then every 1 minute
 setInterval(function () { // checkDoorOpenSensor
     if(fs.existsSync('/sys/class/gpio/gpio60/value')) {
         var previousDoorSensorGPIO = doorSensorGPIO
-        doorSensorGPIO = fs.readFileSync('/sys/class/gpio/gpio60/value')[0] // returns "0\n" if door is open, "1\n" if door closed
+        var gpio60Value = fs.readFileSync('/sys/class/gpio/gpio60/value'); // returns "0\n" if door is open, "1\n" if door closed
+        if(!gpio60Value || gpio60Value.length < 1) return; // TODO maybe log error here?
+        doorSensorGPIO = gpio60Value[0];
         if(doorSensorGPIO == 48) { // "0"
             lastDoorOpenSensed = new Date();
+            if (previousDoorSensorGPIO == 49) { console.log('door opened'); }
         }
         if(doorSensorGPIO == 49 && previousDoorSensorGPIO == 48) { // "1"
             lastDoorClosedSensed = new Date(); // only store when the door CHANGED to closed
+            console.log('door closed');
         }
     }
 }, 1000); // every second
