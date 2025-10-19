@@ -12,7 +12,7 @@ var randomstring = require('randomstring');
 var StringDecoder = require('string_decoder').StringDecoder;
 var exec = require('child_process').exec;
 
-var settings = require('settings.js');
+var settings = require('./settings.js');
 
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
