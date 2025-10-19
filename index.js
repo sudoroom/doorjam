@@ -10,12 +10,13 @@ var SerialPort = require('serialport').SerialPort;
 var sleep = require('sleep').sleep;
 var randomstring = require('randomstring');
 var StringDecoder = require('string_decoder').StringDecoder;
+var exec = require('child_process').exec;
 
-var magStripeProductName = 'USB Swipe Reader';
+var settings = require('settings.js');
 
-var serialDevice = '/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A9007KT3-if00-port0';
 var minLength = 8; // minimum entry code length
 var initPeriod = 500; // time to stay in init period in ms (when buffer is flushed)
+var serialIsOpen = false; // has the serial port been opened successfully?
 
 var state = 'init'; // The current state of this program. Will change to 'running' after initialization.
 var salt = null;
@@ -40,7 +41,7 @@ if(!fs.existsSync('SALT')) {
     salt = fs.readFileSync('SALT');
 }
 
-var serial = new SerialPort(serialDevice, {
+var serial = new SerialPort(settings.serialDevice, {
     baudrate: 9600,
     databits: 8,
     stopbits: 1,
@@ -54,6 +55,11 @@ var health = { // data from the arduino
     lastVoltage : 0, // when did we last get a voltage update?
     sinceMotor : 0, // how long since the last time the motor was activated?
     lastMotor : 0 // what (local) time was motor last activated?
+}
+
+function serialWrite(data) {
+  if(!serialIsOpen) return;
+  serial.write(data);
 }
 
 serial.pipe(split()).pipe(through(function(data,encoding,next) {
@@ -87,9 +93,10 @@ serial.on('close', function () {
 // there is a fake open event before the real one
 // must be a bug in the serial library
 var openEvents = 0;
-serial.on('open', function() {
-    if(openEvents > 0) {
-        console.log("Opened serial connection to arduino!");
+serial.on('open', function(error) {
+    if(openEvents > 0 && !error) {
+      console.log("Opened serial connection to arduino!");
+      serialIsOpen = true;
     }
     openEvents += 1;
 });
@@ -106,7 +113,7 @@ function findMagStripeReader() {
     var devices = HID.devices();
     var i;
     for(i=0; i < devices.length; i++) {
-        if(devices[i].product == magStripeProductName) {
+        if(devices[i].product == settings.magStripeProductName) {
             try {
                 var dev = new HID.HID(devices[i].path);
             } catch(e) {
@@ -151,7 +158,7 @@ function checkACL(inputline) {
 
 function logAttempt(line) {
     console.log("Access denied. Your attempt has been logged. " + new Date());
-    serial.write("s"); // make the speaker make a sad sound :(
+    writeSerial("s"); // make the speaker make a sad sound :(
 
     fs.appendFileSync('/var_rw/failed_attempts', JSON.stringify({
         date: (new Date()).toString(),
@@ -161,8 +168,13 @@ function logAttempt(line) {
 
 function grantAccess(line) {
     console.log("Access granted on " + new Date());
-    serial.write("o");
+    writeSerial("o");
     lastDoorOpenSent = new Date();
+    exec(settings.grantAccessCommand, function(err, stdout, stderr) {
+        if(err) return console.error(err);
+        if(stdout) console.log("grantAccessCommand said:", stdout);
+        if(stderr) console.error("grantAccessCommand stderr said:", stderr);
+    });
     fs.appendFileSync('/var_rw/good_swipe_log', JSON.stringify({
         date: (new Date()).toString(),
         code: line.replace(/\n/g," ")
@@ -239,7 +251,7 @@ console.log("Initializing");
 setTimeout(endInit, initPeriod);
 
 function batteryRequest() {
-    serial.write("b") // tell arduino to send us voltage
+    writeSerial("b") // tell arduino to send us voltage
 }
 
 // Called when it is detected that a door open command
