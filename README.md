@@ -6,6 +6,8 @@ DoorJam is the meatspace firewall for sudo room
 sudo aptitude install build-essential libusb-1.0-0-dev
 
 npm install
+
+cp settings.js.example settings.js # and tweak as needed
 ```
 
 # Usage

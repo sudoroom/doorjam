@@ -1,0 +1,8 @@
+
+module.exports = {
+
+  serialDevice: '/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A9007KT3-if00-port0',
+  magStripeProductName: 'USB Swipe Reader',
+  grantAccessCommand: 'omnindoor-check-and-open.sh'
+  
+};
