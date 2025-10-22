@@ -125,8 +125,8 @@ function findMagStripeReader() {
             return dev;
         }
     }
-    console.log("Magstripe reader not found.");
-//    process.exit(1);
+    console.log("Magstripe reader not found. Exiting");
+    process.exit(1);
 }
 
 function checkACL(inputline) {
@@ -193,53 +193,56 @@ var dev = findMagStripeReader();
 
 
 var hash = makeHash();
-
-if(dev) {
-  // the data is raw USB HID scan codes: 
-  // http://www.mindrunway.ru/IgorPlHex/USBKeyScan.pdf
-  var dataSize = 0;
-  dev.on('data', function(data) { 
-    if(state == 'init') {
-      return; // flush data during init period
-    }
-    // ignore codes that consist of all zeroes
-    var i;
-    var zero = true;
-    for(i=0; i < data.length; i++) {
-      if(data[i] != 0) {
-        zero = false;
-      }
-    }
-    if(zero) {
-      return;
-    }
-    // console.log(data.toString('hex')); // for debugging to figure out what error codes look like
-    dataSize += data.length;
-    hash.update(data);
-    
-    // 0x28 is the scancode for enter
-    if(data[2] == 0x28) {
-      var line = hash.digest('hex');
-      console.log(line);
-      
-      if(dataSize >= 75 && checkACL(line)) {
-        grantAccess(line);
-      } else if (dataSize < 75) {
-        logAttempt('less than 75 bytes: ' + dataSize + ' bytes');
-      } else {
-        logAttempt(line);
-      }
-      line = '';
-      dataSize = 0;
-      hash = makeHash();
-    }    
-  });
-
-  dev.on('error', function(err) {
-    console.log('MAGSTRIPE ERROR', err)
-    //    process.exit(1);
-  });
+if(!dev) {
+  console.error("Magstripe reader not found. Exiting");
+  process.exit(1)
 }
+
+
+// the data is raw USB HID scan codes: 
+// http://www.mindrunway.ru/IgorPlHex/USBKeyScan.pdf
+var dataSize = 0;
+dev.on('data', function(data) { 
+  if(state == 'init') {
+    return; // flush data during init period
+  }
+  // ignore codes that consist of all zeroes
+  var i;
+  var zero = true;
+  for(i=0; i < data.length; i++) {
+    if(data[i] != 0) {
+      zero = false;
+    }
+  }
+  if(zero) {
+    return;
+  }
+  // console.log(data.toString('hex')); // for debugging to figure out what error codes look like
+  dataSize += data.length;
+  hash.update(data);
+  
+  // 0x28 is the scancode for enter
+  if(data[2] == 0x28) {
+    var line = hash.digest('hex');
+    console.log(line);
+    
+    if(dataSize >= 75 && checkACL(line)) {
+      grantAccess(line);
+    } else if (dataSize < 75) {
+      logAttempt('less than 75 bytes: ' + dataSize + ' bytes');
+    } else {
+      logAttempt(line);
+    }
+    line = '';
+    dataSize = 0;
+    hash = makeHash();
+  }    
+});
+
+dev.on('error', function(err) {
+  console.log('MAGSTRIPE ERROR', err)
+  //    process.exit(1);
+});
   
 function endInit() {
     state = 'running';
