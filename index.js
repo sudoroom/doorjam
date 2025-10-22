@@ -57,7 +57,7 @@ var health = { // data from the arduino
     lastMotor : 0 // what (local) time was motor last activated?
 }
 
-function serialWrite(data) {
+function writeSerial(data) {
   if(!serialIsOpen) return;
   serial.write(data);
 }
@@ -82,7 +82,7 @@ serial.pipe(split()).pipe(through(function(data,encoding,next) {
 
 serial.on('error', function(err) {
     console.log('SERIAL ERROR', err);
-    process.exit(1);
+//    process.exit(1);
 });
 
 serial.on('close', function () {
@@ -125,8 +125,8 @@ function findMagStripeReader() {
             return dev;
         }
     }
-    console.log("Magstripe reader not found. Exiting.");
-    process.exit(1);
+    console.log("Magstripe reader not found.");
+//    process.exit(1);
 }
 
 function checkACL(inputline) {
@@ -191,7 +191,7 @@ function makeHash() {
 var decoder = new StringDecoder('utf8');
 var dev = findMagStripeReader();
 if(!dev) {
-    process.exit(1);
+//    process.exit(1);
 }
 
 var hash = makeHash();
@@ -238,7 +238,7 @@ dev.on('data', function(data) {
 
 dev.on('error', function(err) {
     console.log('MAGSTRIPE ERROR', err)
-    process.exit(1);
+//    process.exit(1);
 });
 
 function endInit() {
